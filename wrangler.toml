@@ -1,0 +1,74 @@
+name = "vatsom-ecommerce-worker"
+main = "src/index.ts"
+compatibility_date = "2025-02-04"
+compatibility_flags = ["nodejs_compat"]
+
+# Serve only curated static frontend files from ./public
+# (Prevents source code, migrations, and configuration from ever being served as static assets)
+[assets]
+directory = "./public"
+binding = "ASSETS"
+html_handling = "auto-trailing-slash"
+not_found_handling = "none"
+
+[vars]
+ENVIRONMENT = "development"
+API_VERSION = "v1"
+APP_ORIGIN = "http://localhost:8787"
+PRIVACY_POLICY_VERSION = "2026.11"
+COD_MAX_ORDER_PAISE = "5000000"
+COD_FREE_DELIVERY_THRESHOLD_PAISE = "1500000"
+COD_STANDARD_DELIVERY_PAISE = "15000"
+SESSION_TTL_SECONDS = "604800"
+ADMIN_SESSION_TTL_SECONDS = "28800"
+
+# Cloudflare Hyperdrive binding for DEVELOPMENT Neon branch (`vatsom-dev`, role: `vatsom_app_runtime`)
+# Create via: npx wrangler hyperdrive create vatsom-hyperdrive-dev --connection-string="postgres://vatsom_app_runtime:..."
+# [[hyperdrive]]
+# binding = "HYPERDRIVE"
+# id = "<VATSOM_DEV_HYPERDRIVE_CONFIG_ID>"
+
+# Scheduled Cron Trigger for Notification Outbox Dispatcher & Retry Engine (runs every 5 minutes)
+[triggers]
+crons = ["*/5 * * * *"]
+
+# ============================================================================
+# STAGING ENVIRONMENT (`npx wrangler deploy --env staging`)
+# Connects strictly to the isolated `vatsom-staging` Neon branch via `vatsom-hyperdrive-staging`
+# ============================================================================
+[env.staging]
+name = "vatsom-ecommerce-worker-staging"
+[env.staging.vars]
+ENVIRONMENT = "staging"
+API_VERSION = "v1"
+APP_ORIGIN = "https://vatsom-ecommerce-worker-staging.dockerkali1879.workers.dev"
+PRIVACY_POLICY_VERSION = "2026.11"
+COD_MAX_ORDER_PAISE = "5000000"
+COD_FREE_DELIVERY_THRESHOLD_PAISE = "1500000"
+COD_STANDARD_DELIVERY_PAISE = "15000"
+SESSION_TTL_SECONDS = "604800"
+ADMIN_SESSION_TTL_SECONDS = "28800"
+# [[env.staging.hyperdrive]]
+# binding = "HYPERDRIVE"
+# id = "<VATSOM_STAGING_HYPERDRIVE_CONFIG_ID>"
+
+# ============================================================================
+# PRODUCTION ENVIRONMENT (`npx wrangler deploy --env production`)
+# Connects strictly to the isolated `vatsom-production` Neon branch via `vatsom-hyperdrive-prod`
+# ============================================================================
+[env.production]
+name = "vatsom-ecommerce-worker-prod"
+[env.production.vars]
+ENVIRONMENT = "production"
+API_VERSION = "v1"
+APP_ORIGIN = "https://vatsom.com"
+PRIVACY_POLICY_VERSION = "2026.11"
+COD_MAX_ORDER_PAISE = "5000000"
+COD_FREE_DELIVERY_THRESHOLD_PAISE = "1500000"
+COD_STANDARD_DELIVERY_PAISE = "15000"
+SESSION_TTL_SECONDS = "604800"
+ADMIN_SESSION_TTL_SECONDS = "28800"
+# [[env.production.hyperdrive]]
+# binding = "HYPERDRIVE"
+# id = "<VATSOM_PROD_HYPERDRIVE_CONFIG_ID>"
+

@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vatsom — Atelier Admin Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lenis Smooth Scroll -->
+    <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+    <!-- Three.js & Experimental PaperCrumple 3D Deletion Effect -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="paper_crumple_effect.js"></script>
+    <!-- Google Identity Services & Cloudflare Turnstile -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        paper: '#f4f1ea',
+                        paperDark: '#e5dec9',
+                        paperEdge: '#d6ccb2',
+                        charcoal: '#121212',
+                        accentGold: '#c5a059',
+                        waxRed: '#7c1d1d',
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html.lenis, html.lenis body {
+            height: auto;
+        }
+        .lenis.lenis-smooth {
+            scroll-behavior: auto !important;
+        }
+        .lenis.lenis-smooth [data-lenis-prevent] {
+            overscroll-behavior: contain;
+        }
+
+        /* Tactile Ribbed Laid Paper Texture */
+        .ribbed-paper {
+            background-color: #f4f1ea;
+            background-image: 
+                repeating-linear-gradient(90deg, rgba(255,255,255,0.35) 0px, rgba(255,255,255,0.35) 1px, transparent 1px, transparent 28px),
+                repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 3px),
+                linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px),
+                radial-gradient(ellipse at center, rgba(255,255,255,0.5) 0%, rgba(214,204,178,0.35) 100%);
+            background-size: 28px 100%, 100% 3px, 6px 100%, 100% 100%;
+            box-shadow: 
+                0 1px 2px rgba(0,0,0,0.18),
+                0 12px 28px -6px rgba(0,0,0,0.55),
+                inset 0 0 0 1px rgba(255,255,255,0.6),
+                inset 0 -3px 8px rgba(180,165,135,0.25);
+        }
+
+        .ribbed-paper-dark {
+            background-color: #e5dec9;
+            background-image: 
+                repeating-linear-gradient(0deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 3px),
+                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 100% 3px, 5px 100%;
+        }
+
+        /* Stacked Paper Sheet Edges Underneath */
+        .paper-stack {
+            position: relative;
+        }
+        .paper-stack::before,
+        .paper-stack::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: #e5dec9;
+            z-index: -1;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.45);
+        }
+        .paper-stack::before {
+            transform: translate(4px, 4px) rotate(0.5deg);
+        }
+        .paper-stack::after {
+            background-color: #d8ceb4;
+            transform: translate(-3px, 7px) rotate(-0.6deg);
+        }
+        .paper-stack:hover::before {
+            transform: translate(6px, 6px) rotate(1.1deg);
+        }
+        .paper-stack:hover::after {
+            transform: translate(-5px, 10px) rotate(-1.2deg);
+        }
+
+        /* Realistic Page Card Physics */
+        .paper-card {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
+            overflow: hidden;
+        }
+        .paper-card.is-hovering {
+            transition: transform 0.08s ease-out, box-shadow 0.25s ease-out !important;
+            transition-delay: 0ms !important;
+        }
+
+        .paper-card .paper-sheen {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(550px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,255,255,0.45), transparent 55%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .paper-card:hover .paper-sheen {
+            opacity: 1;
+        }
+
+        .paper-corner-curl {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 0px;
+            height: 0px;
+            background: linear-gradient(135deg, #d8ceb4 0%, #f4f1ea 48%, #c9bda0 50%, #1a1a1a 52%, #121212 100%);
+            box-shadow: -3px -3px 8px rgba(0,0,0,0.22);
+            transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 20;
+            pointer-events: none;
+        }
+        .paper-card:hover .paper-corner-curl {
+            width: 22px;
+            height: 22px;
+        }
+
+        /* 3D Paper Unfold Reveal */
+        .paper-unfold {
+            opacity: 0;
+            transform-origin: top center;
+            transform: perspective(1400px) rotateX(-20deg) translateY(24px) scale(0.98);
+            transition: 
+                opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform, opacity;
+        }
+        .paper-unfold.is-visible {
+            opacity: 1;
+            transform: perspective(1400px) rotateX(0deg) translateY(0px) scale(1);
+        }
+
+        /* Parchment Scroll Rollers */
+        .parchment-roller {
+            height: 14px;
+            background: linear-gradient(180deg, #3a2e21 0%, #1f1812 50%, #0d0a07 100%);
+            border-top: 1px solid rgba(197, 160, 89, 0.45);
+            border-bottom: 1px solid rgba(197, 160, 89, 0.25);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+            position: relative;
+        }
+        .parchment-roller::before,
+        .parchment-roller::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            width: 14px;
+            height: 18px;
+            background: linear-gradient(180deg, #e5c67b 0%, #c5a059 50%, #7d6029 100%);
+            border-radius: 2px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+        }
+        .parchment-roller::before { left: -8px; }
+        .parchment-roller::after { right: -8px; }
+
+        .clip-triangle-hero {
+            clip-path: polygon(0% 0%, 100% 0%, 94% 100%, 6% 100%);
+        }
+        .clip-card-badge {
+            clip-path: polygon(0 0, 100% 0%, 80% 100%, 0% 100%);
+        }
+
+        /* Interactive 3D Origami V Logo */
+        .origami-logo-wrap {
+            position: relative;
+            display: inline-block;
+            transform-style: preserve-3d;
+            perspective: 900px;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.75));
+        }
+        .origami-logo-wrap.is-hovering {
+            transition: transform 0.08s ease-out, filter 0.2s ease-out !important;
+        }
+        .origami-logo-base {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+        .origami-flap-left {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            clip-path: polygon(6.8% 2.4%, 30.3% 2.4%, 23.1% 32.8%, 12.1% 32.8%, 1.9% 20.8%);
+            transform-origin: 30.3% 2.4%;
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease;
+        }
+        .origami-flap-right {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            clip-path: polygon(89.9% 2.4%, 98.5% 32.2%, 81.0% 32.2%);
+            transform-origin: 89.9% 2.4%;
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease;
+        }
+        .origami-logo-wrap:hover .origami-flap-left {
+            transform: translateZ(10px) rotateY(-16deg) rotateX(10deg) scale(1.02);
+            filter: brightness(1.08) drop-shadow(3px 6px 6px rgba(0, 0, 0, 0.55));
+        }
+        .origami-logo-wrap:hover .origami-flap-right {
+            transform: translateZ(6px) rotateY(14deg) rotateX(6deg);
+            filter: brightness(1.12);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d0d0d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c5a059;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-charcoal text-paper font-sans antialiased selection:bg-paper selection:text-charcoal overflow-x-hidden min-h-screen flex flex-col">
+
+    <!-- Notification Toast (Paper Slip Unfold) -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 rotate-2 opacity-0 pointer-events-none transition-all duration-500 ribbed-paper text-charcoal px-6 py-4 shadow-2xl border-l-4 border-accentGold flex items-center space-x-4">
+        <div class="w-9 h-9 rounded-full bg-charcoal text-accentGold flex items-center justify-center shrink-0 shadow">
+            <i class="fa-solid fa-stamp text-sm"></i>
+        </div>
+        <div>
+            <p class="font-cinzel font-bold text-sm tracking-wider" id="toast-title">Archive Updated</p>
+            <p class="text-xs text-charcoal/80" id="toast-desc">Changes inscribed onto the master ledger.</p>
+        </div>
+    </div>
+
+    <!-- Product Editor / Upload Pop-Up Modal -->
+    <div id="editor-modal" data-lenis-prevent class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 opacity-0 pointer-events-none transition-opacity duration-300">
+        <!-- Backdrop (Click outside to close) -->
+        <div onclick="closeEditorModal()" class="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
+
+        <!-- Modal Box -->
+        <div id="editor-modal-box" class="relative z-10 w-full max-w-4xl max-h-[92vh] overflow-y-auto ribbed-paper text-charcoal shadow-2xl border border-paperEdge transform scale-95 translate-y-4 transition-all duration-300">
+            <!-- Top Header & Close Cross -->
+            <div class="sticky top-0 z-20 px-6 sm:px-8 py-5 bg-paperDark/90 backdrop-blur-sm border-b border-charcoal/15 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <img src="vatsom_logo.png" alt="" class="w-6 h-5 object-contain">
+                    <div>
+                        <h3 id="editor-modal-heading" class="font-cinzel text-lg sm:text-xl font-bold tracking-widest leading-none">INSCRIBE NEW ELIXIR FOLIO</h3>
+                        <span class="text-[10px] font-cinzel tracking-[0.2em] text-charcoal/60 uppercase">Master Catalogue &amp; Image Plates</span>
+                    </div>
+                </div>
+                <button type="button" onclick="closeEditorModal()" aria-label="Close modal" class="w-10 h-10 rounded-full bg-charcoal text-paper hover:text-accentGold flex items-center justify-center transition-colors shadow">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Editor Form -->
+            <form id="product-editor-form" onsubmit="saveProductFromModal(event)" class="p-6 sm:p-8 space-y-6">
+                <input type="hidden" id="edit-product-id">
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+                    <div class="md:col-span-6">
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Elixir Name *</label>
+                        <input type="text" id="edit-name" required placeholder="e.g. Cold-Pressed Black Seed Oil" class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 font-cinzel text-sm font-bold text-charcoal focus:outline-none focus:border-charcoal">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Price ($ USD) *</label>
+                        <input type="number" step="0.01" min="0" id="edit-price" required placeholder="68.00" class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 font-cinzel text-sm font-bold text-charcoal focus:outline-none focus:border-charcoal">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Vessel Volume *</label>
+                        <input type="text" id="edit-volume" required placeholder="250ml" class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 font-cinzel text-sm font-bold text-charcoal focus:outline-none focus:border-charcoal">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div>
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Category Subtitle *</label>
+                        <input type="text" id="edit-category" required placeholder="e.g. Gastronomic Edible" class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 text-xs font-semibold text-charcoal focus:outline-none focus:border-charcoal">
+                    </div>
+                    <div>
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Catalogue Filter Group *</label>
+                        <select id="edit-filter-tag" class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 font-cinzel text-xs font-bold text-charcoal focus:outline-none focus:border-charcoal">
+                            <option value="Edible">Culinary &amp; Edible</option>
+                            <option value="Aromatic">Aromatic Essences</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Corner Ribbon Badge *</label>
+                        <input type="text" id="edit-badge" required placeholder="e.g. Bestseller / Rare Harvest" class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 font-cinzel text-xs font-bold text-charcoal focus:outline-none focus:border-charcoal">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div>
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Botanical &amp; Tasting Notes *</label>
+                        <input type="text" id="edit-notes" required placeholder="Nigella Sativa | Pungent, Spicy" class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 font-serif italic text-xs text-charcoal focus:outline-none focus:border-charcoal">
+                    </div>
+                    <div>
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Geographical Origin</label>
+                        <input type="text" id="edit-origin" placeholder="e.g. Faiyum Oasis, Egypt" class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 text-xs text-charcoal focus:outline-none focus:border-charcoal">
+                    </div>
+                    <div>
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Extraction Method</label>
+                        <input type="text" id="edit-extraction" placeholder="e.g. Raw Granite Cold-Press" class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 text-xs text-charcoal focus:outline-none focus:border-charcoal">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Catalogue Card Summary *</label>
+                        <textarea id="edit-description" rows="3" required placeholder="Concise summary displayed on the product card..." class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 text-xs text-charcoal leading-relaxed focus:outline-none focus:border-charcoal"></textarea>
+                    </div>
+                    <div>
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Extended Pop-Up Folio Description</label>
+                        <textarea id="edit-long-description" rows="3" placeholder="Detailed extraction and terroir story shown inside the product pop-up modal..." class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 text-xs text-charcoal leading-relaxed focus:outline-none focus:border-charcoal"></textarea>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div>
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Recommended Culinary / Aromatic Ritual</label>
+                        <input type="text" id="edit-ritual" placeholder="e.g. Drizzle over warm artisanal flatbreads or take one measured teaspoon at dawn." class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 font-serif italic text-xs text-charcoal focus:outline-none focus:border-charcoal">
+                    </div>
+                    <div>
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Verified Stock Quantity *</label>
+                        <input type="number" min="0" max="10000" step="1" id="edit-stock" required value="0" class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 font-cinzel text-xs font-bold text-charcoal focus:outline-none focus:border-charcoal">
+                    </div>
+                    <div class="flex flex-col justify-end">
+                        <label class="flex items-center space-x-2.5 px-4 py-2.5 bg-paper border border-charcoal/25 cursor-pointer">
+                            <input type="checkbox" id="edit-is-active" class="accent-charcoal w-4 h-4">
+                            <span class="font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal">Publish Live (Verified Spec &amp; Price)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3-Plate Image Catalogue Manager -->
+                <div class="p-5 bg-paperDark/70 border border-charcoal/20">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
+                        <div>
+                            <h4 class="font-cinzel text-xs font-bold tracking-widest uppercase text-charcoal">IMAGE CATALOGUE PLATES (3 SLOTS)</h4>
+                            <p class="text-[11px] text-charcoal/70">Upload images from your device or paste image URLs for the product pop-up gallery.</p>
+                        </div>
+                        <span class="text-[10px] font-cinzel tracking-widest text-accentGold bg-charcoal px-2.5 py-1 mt-2 sm:mt-0">LIVE SYNC TO STOREFRONT</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Plate I -->
+                        <div class="bg-paper p-4 border border-charcoal/15 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-cinzel text-[10px] font-bold tracking-widest uppercase">Plate I — Vessel</span>
+                                    <button type="button" onclick="clearImageSlot(0)" class="text-[10px] text-waxRed hover:underline font-cinzel">Clear</button>
+                                </div>
+                                <div id="img-preview-0" class="h-32 bg-charcoal/95 border border-charcoal/20 flex items-center justify-center mb-3 overflow-hidden">
+                                    <span class="text-[10px] font-cinzel text-paper/40 tracking-widest">NO IMAGE</span>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block w-full text-center py-1.5 px-2 bg-charcoal text-paper font-cinzel text-[10px] font-bold tracking-widest cursor-pointer hover:bg-neutral-800 transition-colors">
+                                    <i class="fa-solid fa-upload text-accentGold mr-1"></i> UPLOAD FILE
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event, 0)">
+                                </label>
+                                <input type="text" id="img-url-0" oninput="handleImageUrlInput(0, this.value)" placeholder="Or paste image URL..." class="w-full px-2.5 py-1.5 bg-paperDark/50 border border-charcoal/20 text-[11px] text-charcoal focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Plate II -->
+                        <div class="bg-paper p-4 border border-charcoal/15 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-cinzel text-[10px] font-bold tracking-widest uppercase">Plate II — Botanical</span>
+                                    <button type="button" onclick="clearImageSlot(1)" class="text-[10px] text-waxRed hover:underline font-cinzel">Clear</button>
+                                </div>
+                                <div id="img-preview-1" class="h-32 bg-charcoal/95 border border-charcoal/20 flex items-center justify-center mb-3 overflow-hidden">
+                                    <span class="text-[10px] font-cinzel text-paper/40 tracking-widest">NO IMAGE</span>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block w-full text-center py-1.5 px-2 bg-charcoal text-paper font-cinzel text-[10px] font-bold tracking-widest cursor-pointer hover:bg-neutral-800 transition-colors">
+                                    <i class="fa-solid fa-upload text-accentGold mr-1"></i> UPLOAD FILE
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event, 1)">
+                                </label>
+                                <input type="text" id="img-url-1" oninput="handleImageUrlInput(1, this.value)" placeholder="Or paste image URL..." class="w-full px-2.5 py-1.5 bg-paperDark/50 border border-charcoal/20 text-[11px] text-charcoal focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Plate III -->
+                        <div class="bg-paper p-4 border border-charcoal/15 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-cinzel text-[10px] font-bold tracking-widest uppercase">Plate III — Pour</span>
+                                    <button type="button" onclick="clearImageSlot(2)" class="text-[10px] text-waxRed hover:underline font-cinzel">Clear</button>
+                                </div>
+                                <div id="img-preview-2" class="h-32 bg-charcoal/95 border border-charcoal/20 flex items-center justify-center mb-3 overflow-hidden">
+                                    <span class="text-[10px] font-cinzel text-paper/40 tracking-widest">NO IMAGE</span>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block w-full text-center py-1.5 px-2 bg-charcoal text-paper font-cinzel text-[10px] font-bold tracking-widest cursor-pointer hover:bg-neutral-800 transition-colors">
+                                    <i class="fa-solid fa-upload text-accentGold mr-1"></i> UPLOAD FILE
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event, 2)">
+                                </label>
+                                <input type="text" id="img-url-2" oninput="handleImageUrlInput(2, this.value)" placeholder="Or paste image URL..." class="w-full px-2.5 py-1.5 bg-paperDark/50 border border-charcoal/20 text-[11px] text-charcoal focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer Actions -->
+                <div class="pt-4 border-t border-charcoal/20 flex flex-col sm:flex-row items-center justify-end gap-3">
+                    <button type="button" onclick="closeEditorModal()" class="w-full sm:w-auto px-6 py-3 border border-charcoal/30 text-charcoal font-cinzel text-xs font-bold tracking-widest hover:bg-charcoal/5 transition-colors">
+                        DISCARD
+                    </button>
+                    <button type="submit" class="w-full sm:w-auto px-8 py-3 bg-charcoal text-paper font-cinzel text-xs font-bold tracking-widest hover:bg-neutral-800 transition-all flex items-center justify-center space-x-2.5 shadow-xl">
+                        <img src="vatsom_logo.png" alt="" class="w-4 h-3.5 object-contain">
+                        <span>SEAL &amp; SAVE FOLIO</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Shipment Tracking & COD Remittance Inspector Modal -->
+    <div id="tracking-modal" data-lenis-prevent class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div onclick="closeTrackingModal()" class="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
+        <div id="tracking-modal-box" class="relative z-10 w-full max-w-xl ribbed-paper text-charcoal shadow-2xl border border-paperEdge transform scale-95 translate-y-4 transition-all duration-300">
+            <div class="px-6 py-5 bg-paperDark/90 border-b border-charcoal/15 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <img src="vatsom_logo.png" alt="" class="w-6 h-5 object-contain">
+                    <div>
+                        <h3 id="tracking-modal-heading" class="font-cinzel text-base font-bold tracking-widest">DISPATCH &amp; AWB TRACKING</h3>
+                        <span class="text-[10px] font-cinzel tracking-[0.2em] text-charcoal/60 uppercase">Courier &amp; COD Remittance Ledger</span>
+                    </div>
+                </div>
+                <button type="button" onclick="closeTrackingModal()" class="w-9 h-9 rounded-full bg-charcoal text-paper hover:text-accentGold flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form id="tracking-form" onsubmit="saveOrderTracking(event)" class="p-6 space-y-4">
+                <input type="hidden" id="track-order-id">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">Courier Code *</label>
+                        <input type="text" id="track-courier-code" required placeholder="e.g. BLUEDART / DELHIVERY" class="w-full px-3 py-2 bg-paper border border-charcoal/25 font-cinzel text-xs font-bold text-charcoal">
+                    </div>
+                    <div>
+                        <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">Courier Name *</label>
+                        <input type="text" id="track-courier-name" required placeholder="e.g. BlueDart Priority" class="w-full px-3 py-2 bg-paper border border-charcoal/25 text-xs text-charcoal">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">AWB / Tracking Number *</label>
+                        <input type="text" id="track-awb" required placeholder="e.g. BD948201948IN" class="w-full px-3 py-2 bg-paper border border-charcoal/25 font-cinzel text-xs font-bold text-charcoal">
+                    </div>
+                    <div>
+                        <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">Shipment State *</label>
+                        <select id="track-shipment-state" class="w-full px-3 py-2 bg-paper border border-charcoal/25 font-cinzel text-xs font-bold text-charcoal">
+                            <option value="MANIFESTED">MANIFESTED</option>
+                            <option value="IN_TRANSIT">IN TRANSIT</option>
+                            <option value="OUT_FOR_DELIVERY">OUT FOR DELIVERY</option>
+                            <option value="DELIVERED">DELIVERED</option>
+                            <option value="RTO_IN_TRANSIT">RETURN TO ORIGIN</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">Tracking URL (Optional)</label>
+                    <input type="url" id="track-url" placeholder="https://..." class="w-full px-3 py-2 bg-paper border border-charcoal/25 text-xs text-charcoal">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-charcoal/15">
+                    <div>
+                        <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">COD Remittance Status</label>
+                        <select id="track-cod-remittance" class="w-full px-3 py-2 bg-paper border border-charcoal/25 font-cinzel text-xs font-bold text-charcoal">
+                            <option value="PENDING">PENDING COLLECTION</option>
+                            <option value="COLLECTED_BY_COURIER">COLLECTED BY COURIER</option>
+                            <option value="REMITTED_TO_VATSOM">REMITTED TO VATSOM</option>
+                            <option value="VOIDED">VOIDED / CANCELLED</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">Dispatch Event Note</label>
+                        <input type="text" id="track-note" placeholder="Sealed in obsidian vessel &amp; handed to courier" class="w-full px-3 py-2 bg-paper border border-charcoal/25 text-xs text-charcoal">
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-charcoal/20 flex justify-end gap-3">
+                    <button type="button" onclick="closeTrackingModal()" class="px-5 py-2.5 border border-charcoal/30 font-cinzel text-xs font-bold">CANCEL</button>
+                    <button type="submit" class="px-6 py-2.5 bg-charcoal text-paper font-cinzel text-xs font-bold tracking-widest flex items-center space-x-2">
+                        <img src="vatsom_logo.png" alt="" class="w-4 h-3.5 object-contain">
+                        <span>SEAL TRACKING</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Chancery Security Gate Overlay (Blocks unauthenticated access) -->
+    <div id="admin-auth-gate" class="fixed inset-0 z-50 bg-charcoal/95 backdrop-blur-xl flex items-center justify-center p-6">
+        <div class="w-full max-w-md ribbed-paper text-charcoal p-8 sm:p-10 shadow-2xl border-t-4 border-accentGold text-center relative">
+            <div class="mx-auto w-14 h-12 mb-4 flex items-center justify-center">
+                <img src="vatsom_logo.png" alt="Vatsom Emblem" class="w-full h-full object-contain">
+            </div>
+            <span class="text-accentGold font-cinzel text-[10px] tracking-[0.28em] uppercase font-bold block mb-1">RESTRICTED CHANCERY PERIMETER</span>
+            <h2 class="font-cinzel text-2xl font-bold text-charcoal mb-3">ADMINISTRATOR SIGN-IN</h2>
+            <p class="text-xs text-charcoal/75 leading-relaxed mb-6">
+                Administrative operations require a verified Google identity explicitly allowlisted in the VATSOM server configuration.
+            </p>
+            <div id="admin-auth-error" class="hidden mb-4 p-3 bg-waxRed/10 border border-waxRed text-waxRed text-xs font-semibold"></div>
+            <div id="admin-google-btn-container" class="flex justify-center mb-4 min-h-[44px]"></div>
+            <p class="text-[11px] font-serif italic text-charcoal/60">
+                Protected by Server-Side Role Verification, HttpOnly Session Tokens &amp; Audit Logging.
+            </p>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-40 bg-charcoal/90 backdrop-blur-md border-b border-paper/10">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="vatsom_premium_oils.html" class="flex items-center space-x-3.5 group" title="Return to Storefront">
+                    <div class="origami-logo-wrap w-10 h-8 shrink-0 flex items-center justify-center">
+                        <img src="vatsom_logo.png" alt="Vatsom Origami V Logo" class="origami-logo-base">
+                        <img src="vatsom_logo.png" alt="" aria-hidden="true" class="origami-flap-left">
+                        <img src="vatsom_logo.png" alt="" aria-hidden="true" class="origami-flap-right">
+                    </div>
+                    <span class="font-cinzel text-2xl font-bold tracking-[0.22em] text-paper leading-none translate-y-[1px]">VATSOM</span>
+                </a>
+                <span class="hidden sm:inline-block px-3 py-1 ribbed-paper text-charcoal font-cinzel text-[10px] font-bold tracking-[0.22em] uppercase">
+                    ADMIN PORTAL
+                </span>
+            </div>
+
+            <nav class="hidden md:flex items-center space-x-8 font-sans text-xs tracking-[0.2em]">
+                <a href="#orders-section" class="text-paper/70 hover:text-accentGold transition-colors uppercase py-2">Orders Ledger</a>
+                <a href="#products-section" class="text-paper/70 hover:text-accentGold transition-colors uppercase py-2">Catalogue Manager</a>
+                <a href="#content-section" class="text-paper/70 hover:text-accentGold transition-colors uppercase py-2">Site Content</a>
+            </nav>
+
+            <div class="flex items-center space-x-3">
+                <span id="admin-identity-badge" class="hidden lg:inline-block text-[11px] font-cinzel text-accentGold tracking-wider"></span>
+                <button type="button" id="migrate-legacy-btn" onclick="migrateLegacyLocalStorage()" title="Import legacy localStorage items into PostgreSQL" class="hidden sm:inline-flex px-3 py-2.5 border border-paper/25 text-paper font-cinzel text-[10px] font-bold tracking-widest hover:border-accentGold hover:text-accentGold transition-all items-center space-x-1.5">
+                    <i class="fa-solid fa-database text-[10px]"></i>
+                    <span>MIGRATE CACHE</span>
+                </button>
+                <a href="vatsom_premium_oils.html" class="px-4 py-2.5 ribbed-paper text-charcoal font-cinzel text-xs font-bold tracking-widest hover:bg-paperDark transition-all flex items-center space-x-2 shadow-md">
+                    <span>VIEW STOREFRONT</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-charcoal"></i>
+                </a>
+                <button type="button" id="admin-logout-btn" onclick="adminLogout()" title="Revoke administrative session" class="hidden px-3 py-2.5 bg-waxRed text-paper font-cinzel text-[10px] font-bold tracking-widest hover:opacity-90 transition-all">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Admin Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-12 space-y-20 relative z-10">
+
+        <!-- Top Executive Banner & KPIs -->
+        <section>
+            <div class="text-center mb-10">
+                <div class="paper-unfold inline-block mb-4 px-12 py-2 ribbed-paper text-charcoal font-cinzel text-[10px] font-semibold tracking-[0.26em] uppercase clip-triangle-hero shadow-lg">
+                    Atelier Chancery &amp; Master Archive
+                </div>
+                <h1 class="paper-unfold font-cinzel text-4xl md:text-5xl font-extrabold text-paper tracking-tight">
+                    EXECUTIVE <span class="italic font-serif font-light text-accentGold">COMMAND</span> LEDGER
+                </h1>
+            </div>
+
+            <!-- 3 Square KPI Parchment Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="paper-unfold paper-stack paper-card ribbed-paper text-charcoal p-7 relative shadow-xl border-t-2 border-accentGold">
+                    <div class="paper-sheen"></div>
+                    <div class="paper-corner-curl"></div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-cinzel font-bold text-accentGold text-xs tracking-widest">01 / ORDERS PLACED</span>
+                        <i class="fa-solid fa-scroll text-charcoal/40"></i>
+                    </div>
+                    <div class="font-cinzel font-extrabold text-4xl text-charcoal mb-1" id="kpi-total-orders">0</div>
+                    <p class="text-xs text-charcoal/75 font-serif italic" id="kpi-pending-orders">0 awaiting wax seal</p>
+                </div>
+
+                <div class="paper-unfold paper-stack paper-card ribbed-paper text-charcoal p-7 relative shadow-xl border-t-2 border-accentGold" data-delay="80">
+                    <div class="paper-sheen"></div>
+                    <div class="paper-corner-curl"></div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-cinzel font-bold text-accentGold text-xs tracking-widest">02 / ATELIER REVENUE</span>
+                        <i class="fa-solid fa-coins text-charcoal/40"></i>
+                    </div>
+                    <div class="font-cinzel font-extrabold text-4xl text-charcoal mb-1" id="kpi-revenue">$0.00</div>
+                    <p class="text-xs text-charcoal/75 font-serif italic">Cumulative allocation value</p>
+                </div>
+
+                <div class="paper-unfold paper-stack paper-card ribbed-paper text-charcoal p-7 relative shadow-xl border-t-2 border-accentGold" data-delay="160">
+                    <div class="paper-sheen"></div>
+                    <div class="paper-corner-curl"></div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-cinzel font-bold text-accentGold text-xs tracking-widest">03 / ACTIVE ELIXIRS</span>
+                        <i class="fa-solid fa-flask text-charcoal/40"></i>
+                    </div>
+                    <div class="font-cinzel font-extrabold text-4xl text-charcoal mb-1" id="kpi-total-products">0</div>
+                    <p class="text-xs text-charcoal/75 font-serif italic" id="kpi-product-split">Edible &amp; Aromatic Vault</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 1: ORDERS PLACED LEDGER -->
+        <section id="orders-section" class="scroll-mt-24">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+                <div>
+                    <span class="text-accentGold font-cinzel text-xs tracking-[0.3em] uppercase block mb-2">ALLOCATION DISPATCH</span>
+                    <h2 class="font-cinzel text-3xl font-bold text-paper">ORDERS PLACED LEDGER</h2>
+                </div>
+
+                <!-- Search by Order ID & Filter by Status -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-paper/40"></i>
+                        <input type="text" id="order-search" oninput="renderOrders()" placeholder="Search Order ID (e.g. VTS-)" class="pl-9 pr-4 py-2 bg-paper/10 border border-paper/20 text-xs text-paper placeholder-paper/40 font-cinzel tracking-wider focus:outline-none focus:border-accentGold">
+                    </div>
+                    <select id="order-status-filter" onchange="renderOrders()" class="px-4 py-2 ribbed-paper text-charcoal font-cinzel text-xs font-bold tracking-wider focus:outline-none">
+                        <option value="all">ALL STATUSES</option>
+                        <option value="Pending Seal">PENDING SEAL</option>
+                        <option value="In Extraction">IN EXTRACTION</option>
+                        <option value="Dispatched">DISPATCHED</option>
+                        <option value="Delivered">DELIVERED</option>
+                        <option value="Cancelled">CANCELLED</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Orders Parchment Table Container -->
+            <div class="paper-unfold ribbed-paper text-charcoal shadow-2xl border border-paperEdge overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-paperDark/80 border-b border-charcoal/20 font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80">
+                                <th class="py-4 px-6">Order ID</th>
+                                <th class="py-4 px-6">Date &amp; Patron</th>
+                                <th class="py-4 px-6">Inscribed Elixirs</th>
+                                <th class="py-4 px-6">Total</th>
+                                <th class="py-4 px-6">Order Status</th>
+                                <th class="py-4 px-6 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-tbody" class="divide-y divide-charcoal/15 text-xs">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: CATALOGUE & PRODUCT MANAGER -->
+        <section id="products-section" class="scroll-mt-24">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
+                <div>
+                    <span class="text-accentGold font-cinzel text-xs tracking-[0.3em] uppercase block mb-2">THE VAULT OF ELIXIRS</span>
+                    <h2 class="font-cinzel text-3xl font-bold text-paper">CATALOGUE &amp; IMAGE MANAGER</h2>
+                    <p class="text-xs text-paper/60 mt-1">Upload new products, manage 3-plate image catalogues, edit pricing &amp; botanical notes, or strike existing products.</p>
+                </div>
+
+                <button type="button" onclick="openEditorModal(null)" class="px-6 py-3.5 ribbed-paper text-charcoal font-cinzel text-xs font-bold tracking-widest hover:bg-paperDark transition-all flex items-center space-x-2.5 shadow-xl shrink-0">
+                    <img src="vatsom_logo.png" alt="" class="w-4 h-3.5 object-contain">
+                    <span>+ UPLOAD NEW PRODUCT</span>
+                </button>
+            </div>
+
+            <!-- Admin Product Grid -->
+            <div id="admin-product-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <!-- Populated via JS -->
+            </div>
+        </section>
+
+        <!-- SECTION 3: WEBSITE CONTENT & MANIFESTO EDITOR -->
+        <section id="content-section" class="scroll-mt-24 pb-12">
+            <div class="text-center mb-10">
+                <span class="text-accentGold font-cinzel text-xs tracking-[0.3em] uppercase block mb-2">INSCRIPTION CODEX</span>
+                <h2 class="font-cinzel text-3xl font-bold text-paper">WEBSITE CONTENT &amp; MANIFESTO EDITOR</h2>
+                <p class="text-xs text-paper/60 mt-1">Modify storefront headlines, hero parchment banner, and manifesto copy. Changes sync immediately to the live site.</p>
+            </div>
+
+            <!-- Physical Scroll Container with Top & Bottom Rollers -->
+            <div class="paper-unfold relative mx-auto max-w-4xl">
+                <div class="parchment-roller z-20"></div>
+
+                <form id="site-content-form" onsubmit="saveSiteContent(event)" class="ribbed-paper text-charcoal px-6 sm:px-12 py-10 shadow-2xl space-y-6">
+                    <div class="border-b border-charcoal/15 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <h3 class="font-cinzel text-lg font-bold tracking-wider">STOREFRONT TYPOGRAPHY &amp; NARRATIVE</h3>
+                            <span class="text-xs font-serif italic text-charcoal/70">Edits reflect live on vatsom_premium_oils.html</span>
+                        </div>
+                        <button type="button" onclick="resetSiteContentToDefaults()" class="text-xs font-cinzel font-bold text-waxRed hover:underline tracking-wider">
+                            RESTORE DEFAULT ARCHIVE
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Hero Ribbed Strip Text</label>
+                            <input type="text" id="cms-hero-banner" required class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 font-cinzel text-xs font-bold text-charcoal focus:outline-none focus:border-charcoal">
+                        </div>
+                        <div>
+                            <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Hero Headline (HTML allowed for gold italics)</label>
+                            <input type="text" id="cms-hero-title" required class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 font-cinzel text-xs font-bold text-charcoal focus:outline-none focus:border-charcoal">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Hero Subheadline Paragraph</label>
+                        <textarea id="cms-hero-subtitle" rows="2" required class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 text-xs text-charcoal leading-relaxed focus:outline-none focus:border-charcoal"></textarea>
+                    </div>
+
+                    <div class="pt-4 border-t border-charcoal/15">
+                        <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Manifesto Heading</label>
+                        <input type="text" id="cms-manifesto-title" required class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 font-cinzel text-sm font-bold text-charcoal focus:outline-none focus:border-charcoal">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Manifesto Paragraph I</label>
+                            <textarea id="cms-manifesto-p1" rows="3" required class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 text-xs text-charcoal leading-relaxed focus:outline-none focus:border-charcoal"></textarea>
+                        </div>
+                        <div>
+                            <label class="block font-cinzel text-[11px] font-bold tracking-widest uppercase text-charcoal/80 mb-1.5">Manifesto Paragraph II</label>
+                            <textarea id="cms-manifesto-p2" rows="3" required class="w-full px-4 py-2.5 bg-paper border border-charcoal/25 text-xs text-charcoal leading-relaxed focus:outline-none focus:border-charcoal"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-charcoal/20 flex justify-end">
+                        <button type="submit" class="px-8 py-4 bg-charcoal text-paper font-cinzel text-xs font-bold tracking-widest hover:bg-neutral-800 active:scale-95 transition-all flex items-center space-x-3 shadow-xl">
+                            <img src="vatsom_logo.png" alt="" class="w-4 h-3.5 object-contain">
+                            <span>SEAL &amp; PUBLISH CONTENT</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="parchment-roller z-20"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-charcoal border-t border-paper/10 py-10 px-6 mt-auto">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-paper/50 gap-4">
+            <div class="flex items-center space-x-3">
+                <img src="vatsom_logo.png" alt="Vatsom" class="w-6 h-5 object-contain">
+                <span class="font-cinzel tracking-widest text-paper">VATSOM ADMIN PORTAL</span>
+            </div>
+            <p>&copy; 2026 VATSOM Oils. Master Chancery &amp; Inventory Control.</p>
+        </div>
+    </footer>
+
+    <!-- Admin Portal Application Script -->
+    <script>
+        // Default Storefront Products
+        const defaultProducts = [
+            {
+                id: 1,
+                name: "Cold-Pressed Black Seed Oil",
+                category: "Edible & Therapeutic",
+                filterTag: "Edible",
+                price: 68.00,
+                volume: "250ml",
+                notes: "Nigella Sativa | Pungent, Spicy, Deep Herbal",
+                description: "Sourced from pristine Egyptian fields, mechanically expressed without heat to safeguard high thymoquinone concentration.",
+                longDescription: "Harvested at dawn from mineral-rich alluvial soils in the Faiyum Oasis, our Nigella Sativa seeds are single-pressed in small granite batches below 27°C. Unfiltered and deeply aromatic, this obsidian-hued elixir preserves over 2.4% native thymoquinone and volatile essential lipids.",
+                origin: "Faiyum Oasis, Egypt",
+                extraction: "Raw Granite Cold-Press",
+                ritual: "Drizzle over warm artisanal flatbreads, charred root vegetables, or take one measured teaspoon neat at dawn.",
+                badge: "Bestseller",
+                images: []
+            },
+            {
+                id: 2,
+                name: "Wild Forest Oregano Aromatic Oil",
+                category: "Aromatic Essence",
+                filterTag: "Aromatic",
+                price: 85.00,
+                volume: "100ml",
+                notes: "Origanum Vulgare | Herbaceous, Warm, Camphorous",
+                description: "Wild-foraged from high-altitude Balkan cliffs. Possesses a deeply grounding and clarifying aromatic profile.",
+                longDescription: "Hand-gathered above 1,600 meters from sun-drenched limestone ridges, this wild mountain oregano undergoes slow copper-alembic hydro-distillation. Rich in carvacrol and wild forest terpenes, it clears the atmosphere and anchors meditative spaces.",
+                origin: "Dinaric Alps, Balkans",
+                extraction: "Copper-Alembic Distillation",
+                ritual: "Add 3–4 drops to a ceramic stone diffuser, or dilute in carrier oil for a warming chest and temple compress.",
+                badge: "Rare Harvest",
+                images: []
+            },
+            {
+                id: 3,
+                name: "Tuscan White Truffle Infused Olive Oil",
+                category: "Gastronomic Edible",
+                filterTag: "Edible",
+                price: 120.00,
+                volume: "200ml",
+                notes: "Tuber Magnatum | Earthy, Musky, Luxurious",
+                description: "Freshly shaved white truffles macerated in early-harvest organic extra virgin olive oil from San Miniato.",
+                longDescription: "Foraged beneath ancient oak and hazelnut roots in San Miniato, real Alba & Tuscan white truffles are cold-macerated directly into first-day Moraiolo extra virgin olive oil. Free of synthetic aromas, delivering an unmistakable, hauntingly earthy finish.",
+                origin: "San Miniato, Tuscany",
+                extraction: "Cold Botanical Maceration",
+                ritual: "Anoint handmade tagliolini, aged Parmigiano-Reggiano risottos, or poached farm eggs immediately before serving.",
+                badge: "Chef's Choice",
+                images: []
+            },
+            {
+                id: 4,
+                name: "Moroccan Argan Culinary & Skin Oil",
+                category: "Dual-Purpose Elixir",
+                filterTag: "Edible",
+                price: 95.00,
+                volume: "250ml",
+                notes: "Argania Spinosa | Roasted Nut, Warm Amber",
+                description: "Hand-cracked by women's cooperatives in the Sous Valley. Lightly toasted for complex culinary finishing or deep nourishment.",
+                longDescription: "Collected from UNESCO-protected biosphere argan forests, each nut is cracked between two river stones by master artisans. Gently rested to develop a silk-textured, golden hazelnut bouquet brimming with tocopherols and squalene.",
+                origin: "Sous Valley, Morocco",
+                extraction: "Artisanal Stone-Cracked Press",
+                ritual: "Finish grilled sea bass and couscous, or warm two drops between palms to seal moisture into damp skin.",
+                badge: "Organic",
+                images: []
+            },
+            {
+                id: 5,
+                name: "Himalayan Rhododendron Aromatic Oil",
+                category: "Aromatic Essence",
+                filterTag: "Aromatic",
+                price: 110.00,
+                volume: "100ml",
+                notes: "Rhododendron Arboreum | Floral, Sweet, Resinous",
+                description: "Distilled from crimson blossoms gathered in restricted high-altitude Himalayan wildlife sanctuaries.",
+                longDescription: "During the brief spring thaw at 3,200 meters, fallen rhododendron petals are collected by local mountain stewards and steam-distilled using glacial spring water. Opens with crisp alpine nectar before settling into a balsamic cedarwood undertone.",
+                origin: "Langtang Valley, Himalayas",
+                extraction: "Glacial Spring Hydro-Distillation",
+                ritual: "Diffuse during evening wind-down or anoint pulse points for a serene, high-altitude botanical sanctuary.",
+                badge: "Limited Batch",
+                images: []
+            },
+            {
+                id: 6,
+                name: "Sicilian Lemon Zest Infused Oil",
+                category: "Gastronomic Edible",
+                filterTag: "Edible",
+                price: 60.00,
+                volume: "250ml",
+                notes: "Citrus Limon | Vibrant, Zesty, Bright Zest",
+                description: "Cold-pressed simultaneously with organic Syracuse lemon peels to capture immediate, electric citrus notes.",
+                longDescription: "Using the traditional 'Olio Agrumato' method, whole organic Femminello Siracusano lemons are crushed together with green Nocellara del Belice olives in the same granite mill, locking volatile citrus essential oils directly into the golden lipid matrix.",
+                origin: "Syracuse, Sicily",
+                extraction: "Simultaneous Granite Agrumato",
+                ritual: "Drizzle over crudo, burrata, steamed asparagus, or substitute into olive-oil citrus cakes.",
+                badge: "Seasonal",
+                images: []
+            }
+        ];
+
+        // Default Initial Orders for the Ledger
+        const defaultOrders = [
+            {
+                orderId: "VTS-8492",
+                customer: "Lady Eleanor Vance",
+                date: "2026-11-01 11:20",
+                items: [
+                    { id: 3, name: "Tuscan White Truffle Infused Olive Oil", volume: "200ml", quantity: 2, price: 120.00 },
+                    { id: 1, name: "Cold-Pressed Black Seed Oil", volume: "250ml", quantity: 1, price: 68.00 }
+                ],
+                total: 308.00,
+                status: "Pending Seal"
+            },
+            {
+                orderId: "VTS-8479",
+                customer: "Chef Julian Sterling (Atelier L'Ombre)",
+                date: "2026-10-31 19:45",
+                items: [
+                    { id: 6, name: "Sicilian Lemon Zest Infused Oil", volume: "250ml", quantity: 3, price: 60.00 },
+                    { id: 4, name: "Moroccan Argan Culinary & Skin Oil", volume: "250ml", quantity: 2, price: 95.00 }
+                ],
+                total: 370.00,
+                status: "In Extraction"
+            },
+            {
+                orderId: "VTS-8451",
+                customer: "Dr. Aris Thorne",
+                date: "2026-10-30 14:12",
+                items: [
+                    { id: 5, name: "Himalayan Rhododendron Aromatic Oil", volume: "100ml", quantity: 1, price: 110.00 },
+                    { id: 2, name: "Wild Forest Oregano Aromatic Oil", volume: "100ml", quantity: 1, price: 85.00 }
+                ],
+                total: 195.00,
+                status: "Dispatched"
+            },
+            {
+                orderId: "VTS-8410",
+                customer: "Sovereign Sanctuary Spa",
+                date: "2026-10-28 09:30",
+                items: [
+                    { id: 4, name: "Moroccan Argan Culinary & Skin Oil", volume: "250ml", quantity: 4, price: 95.00 }
+                ],
+                total: 380.00,
+                status: "Delivered"
+            }
+        ];
+
+        // Default Storefront CMS Copy
+        const defaultSiteContent = {
+            heroBanner: "Purified Botanical & Culinary Extracts",
+            heroTitleHtml: 'SACRED <span class="italic font-serif font-light text-accentGold">OILS</span> OF DISTINCTION',
+            heroSubtitle: "Hand-harvested edible elixirs and rare aromatic essences. Pressed in nocturnal silence, inscribed on ribbed parchment, and sealed in obsidian glass.",
+            manifestoTitle: "Where Ancient Extraction Meets Modern Precision",
+            manifestoP1: "Vatsom was born from an obsession with purity. In an era of mass-industrialized refining, our laboratory-studios adhere strictly to ancestral stone-grinding and pristine cold-expeller techniques.",
+            manifestoP2: "Every drop of our culinary or aromatic essence tells a silent story of soil, rain, and careful hand-harvesting."
+        };
+
+        // State
+        let products = [];
+        let orders = [];
+        let siteContent = { ...defaultSiteContent };
+        let editingImages = ['', '', ''];
+        let currentAdminUser = null;
+        let csrfTokenInMemory = '';
+
+        function getCsrfToken() {
+            if (csrfTokenInMemory) return csrfTokenInMemory;
+            const match = document.cookie.match(/(?:^|;\s*)vatsom_csrf=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : '';
+        }
+
+        async function apiRequest(path, options = {}) {
+            const headers = {
+                'Accept': 'application/json',
+                ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                ...(options.headers || {})
+            };
+            const method = (options.method || 'GET').toUpperCase();
+            if (method !== 'GET' && method !== 'HEAD') {
+                const csrf = getCsrfToken();
+                if (csrf) headers['X-CSRF-Token'] = csrf;
+            }
+            const res = await fetch(path, {
+                ...options,
+                method,
+                headers,
+                credentials: 'same-origin'
+            });
+            const json = await res.json().catch(() => ({ success: false, error: { message: 'Invalid server response' } }));
+            if (!res.ok || !json.success) {
+                const err = new Error(json?.error?.message || `Request failed (${res.status})`);
+                err.status = res.status;
+                err.code = json?.error?.code;
+                throw err;
+            }
+            return json.data;
+        }
+
+        // Initialize Lenis Smooth Scroll
+        let lenis;
+        if (typeof Lenis !== 'undefined') {
+            lenis = new Lenis({
+                duration: 1.2,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                smoothWheel: true
+            });
+            function raf(time) {
+                lenis.raf(time);
+                requestAnimationFrame(raf);
+            }
+            requestAnimationFrame(raf);
+        }
+
+        // Authenticate Admin Session & Initialize Google Identity Services
+        async function initAdminAuthGate() {
+            const gate = document.getElementById('admin-auth-gate');
+            const errBox = document.getElementById('admin-auth-error');
+            const badge = document.getElementById('admin-identity-badge');
+            const logoutBtn = document.getElementById('admin-logout-btn');
+
+            try {
+                const [pubConfig, me] = await Promise.all([
+                    apiRequest('/api/v1/public-config').catch(() => ({ googleClientId: '' })),
+                    apiRequest('/api/v1/auth/me').catch(() => ({ authenticated: false, user: null }))
+                ]);
+
+                if (me.authenticated && me.user && me.user.role === 'admin' && me.sessionScope === 'admin') {
+                    currentAdminUser = me.user;
+                    gate.classList.add('hidden');
+                    if (badge) {
+                        badge.textContent = `ADMIN: ${me.user.email.toUpperCase()}`;
+                        badge.classList.remove('hidden');
+                    }
+                    if (logoutBtn) logoutBtn.classList.remove('hidden');
+                    await loadAdminDataFromServer();
+                    return;
+                }
+
+                // Render Google Sign-In button inside #admin-auth-gate
+                gate.classList.remove('hidden');
+                if (pubConfig.googleClientId && window.google && window.google.accounts) {
+                    window.google.accounts.id.initialize({
+                        client_id: pubConfig.googleClientId,
+                        callback: handleAdminGoogleCredential
+                    });
+                    window.google.accounts.id.renderButton(
+                        document.getElementById('admin-google-btn-container'),
+                        { theme: 'filled_black', size: 'large', text: 'signin_with', shape: 'rectangular', width: 280 }
+                    );
+                } else {
+                    const container = document.getElementById('admin-google-btn-container');
+                    if (container) {
+                        container.innerHTML = `<span class="text-xs font-cinzel text-charcoal/70">Configure GOOGLE_CLIENT_ID in Worker secrets to enable Google Sign-In.</span>`;
+                    }
+                }
+            } catch (err) {
+                if (errBox) {
+                    errBox.textContent = err.message || 'Authentication check failed.';
+                    errBox.classList.remove('hidden');
+                }
+            }
+        }
+
+        async function handleAdminGoogleCredential(response) {
+            const errBox = document.getElementById('admin-auth-error');
+            if (errBox) errBox.classList.add('hidden');
+            try {
+                const authData = await apiRequest('/api/v1/auth/google', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        credential: response.credential,
+                        adminPortalLogin: true
+                    })
+                });
+                csrfTokenInMemory = authData.csrfToken || '';
+                currentAdminUser = authData.user;
+                document.getElementById('admin-auth-gate').classList.add('hidden');
+                const badge = document.getElementById('admin-identity-badge');
+                if (badge && currentAdminUser) {
+                    badge.textContent = `ADMIN: ${currentAdminUser.email.toUpperCase()}`;
+                    badge.classList.remove('hidden');
+                }
+                document.getElementById('admin-logout-btn')?.classList.remove('hidden');
+                showToast("Chancery Unlocked", `Authenticated as ${currentAdminUser.email}`);
+                await loadAdminDataFromServer();
+            } catch (err) {
+                if (errBox) {
+                    errBox.textContent = err.message || 'Access denied: Account not allowlisted for administrative access.';
+                    errBox.classList.remove('hidden');
+                }
+            }
+        }
+
+        async function adminLogout() {
+            try {
+                await apiRequest('/api/v1/auth/logout', { method: 'POST' });
+            } catch (e) {}
+            csrfTokenInMemory = '';
+            currentAdminUser = null;
+            window.location.reload();
+        }
+
+        // Load Authoritative Data from PostgreSQL Backend via /api/v1/admin/*
+        async function loadAdminDataFromServer() {
+            try {
+                const [serverProducts, serverOrders, serverContent] = await Promise.all([
+                    apiRequest('/api/v1/admin/products'),
+                    apiRequest('/api/v1/admin/orders'),
+                    apiRequest('/api/v1/site-content')
+                ]);
+                products = Array.isArray(serverProducts) ? serverProducts : [];
+                orders = Array.isArray(serverOrders) ? serverOrders : [];
+                siteContent = serverContent ? { ...defaultSiteContent, ...serverContent } : { ...defaultSiteContent };
+            } catch (err) {
+                showToast("Server Sync Notice", err.message || "Unable to load admin records.");
+            }
+            updateKPIs();
+            renderOrders();
+            renderAdminProducts();
+            populateContentForm();
+            observePaperElements();
+        }
+
+        // Update Top KPI Cards
+        function updateKPIs() {
+            const totalOrdersEl = document.getElementById('kpi-total-orders');
+            const pendingOrdersEl = document.getElementById('kpi-pending-orders');
+            const revenueEl = document.getElementById('kpi-revenue');
+            const totalProductsEl = document.getElementById('kpi-total-products');
+            const productSplitEl = document.getElementById('kpi-product-split');
+
+            const activeOrders = orders.filter(o => o.status !== 'Cancelled');
+            const pendingCount = orders.filter(o => o.status === 'Pending Seal').length;
+            const totalRev = activeOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+
+            totalOrdersEl.textContent = String(orders.length);
+            pendingOrdersEl.textContent = `${pendingCount} awaiting wax seal`;
+            revenueEl.textContent = `$${totalRev.toFixed(2)}`;
+
+            const edibleCount = products.filter(p => p.filterTag === 'Edible').length;
+            const aromaticCount = products.filter(p => p.filterTag === 'Aromatic').length;
+            totalProductsEl.textContent = String(products.length);
+            productSplitEl.textContent = `${edibleCount} Edible • ${aromaticCount} Aromatic`;
+        }
+
+        // Status Badge Styling Helper
+        function getStatusStyle(status) {
+            switch (status) {
+                case 'Pending Seal':
+                    return 'bg-waxRed text-paper border-waxRed';
+                case 'In Extraction':
+                    return 'bg-accentGold/25 text-charcoal border-accentGold';
+                case 'Dispatched':
+                    return 'bg-charcoal text-accentGold border-charcoal';
+                case 'Delivered':
+                    return 'bg-emerald-900 text-paper border-emerald-900';
+                case 'Cancelled':
+                    return 'bg-neutral-300 text-charcoal/50 border-charcoal/20 line-through';
+                default:
+                    return 'bg-paperDark text-charcoal border-charcoal/30';
+            }
+        }
+
+        // Escape HTML helper for safe rendering of untrusted order fields
+        function escapeHtmlClient(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Render Orders Table
+        function renderOrders() {
+            const tbody = document.getElementById('orders-tbody');
+            const query = (document.getElementById('order-search')?.value || '').trim().toLowerCase();
+            const statusFilter = document.getElementById('order-status-filter')?.value || 'all';
+
+            const filtered = orders.filter(order => {
+                const matchesId = (order.orderId || '').toLowerCase().includes(query) || (order.customer || '').toLowerCase().includes(query);
+                const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+                return matchesId && matchesStatus;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-12 text-center text-charcoal/60 font-serif italic">
+                            No order slips match the current filter criteria.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(order => {
+                const itemsSummary = (order.items || [])
+                    .map(i => `<div class="mb-0.5"><span class="font-cinzel font-bold">${Number(i.quantity)}×</span> ${escapeHtmlClient(i.name)} <span class="text-charcoal/60 font-serif italic">(${escapeHtmlClient(i.volume)})</span></div>`)
+                    .join('');
+
+                const awbBadge = order.tracking && order.tracking.awbNumber
+                    ? `<div class="mt-1 text-[10px] font-cinzel text-charcoal/75"><i class="fa-solid fa-truck-fast text-accentGold mr-1"></i>${escapeHtmlClient(order.tracking.courierName)}: <strong>${escapeHtmlClient(order.tracking.awbNumber)}</strong></div>`
+                    : '';
+
+                const safeOrderId = escapeHtmlClient(order.orderId);
+                return `
+                    <tr data-order-row="${safeOrderId}" class="hover:bg-paperDark/45 transition-colors">
+                        <td class="py-4 px-6 align-top">
+                            <span class="font-cinzel font-bold text-sm text-charcoal tracking-wider block">${safeOrderId}</span>
+                            <span class="inline-block mt-1 px-2 py-0.5 text-[9px] font-cinzel font-bold tracking-widest uppercase border ${getStatusStyle(order.status)}">
+                                ${escapeHtmlClient(order.status)}
+                            </span>
+                            ${awbBadge}
+                        </td>
+                        <td class="py-4 px-6 align-top">
+                            <div class="font-semibold text-charcoal">${escapeHtmlClient(order.customer || 'Private Client')}</div>
+                            <div class="text-[11px] text-charcoal/60 font-serif italic mt-0.5">${escapeHtmlClient(order.date)}</div>
+                            ${order.addressSnapshot && order.addressSnapshot.city ? `<div class="text-[10px] text-charcoal/65 mt-0.5">${escapeHtmlClient(order.addressSnapshot.city)}, PIN ${escapeHtmlClient(order.addressSnapshot.pinCode)}</div>` : ''}
+                        </td>
+                        <td class="py-4 px-6 align-top">
+                            ${itemsSummary}
+                        </td>
+                        <td class="py-4 px-6 align-top font-cinzel font-bold text-sm text-charcoal">
+                            $${Number(order.total).toFixed(2)}
+                            <span class="block text-[9px] font-sans font-normal text-charcoal/60 uppercase">COD: ${escapeHtmlClient(order.codRemittanceStatus || 'PENDING')}</span>
+                        </td>
+                        <td class="py-4 px-6 align-top">
+                            <select onchange="updateOrderStatus('${safeOrderId}', this.value)" class="px-3 py-1.5 bg-paper border border-charcoal/30 font-cinzel text-[11px] font-bold tracking-wider text-charcoal focus:outline-none focus:border-charcoal">
+                                <option value="Pending Seal" ${order.status === 'Pending Seal' ? 'selected' : ''}>Pending Seal</option>
+                                <option value="In Extraction" ${order.status === 'In Extraction' ? 'selected' : ''}>In Extraction</option>
+                                <option value="Dispatched" ${order.status === 'Dispatched' ? 'selected' : ''}>Dispatched</option>
+                                <option value="Delivered" ${order.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                                <option value="Cancelled" ${order.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                            </select>
+                        </td>
+                        <td class="py-4 px-6 align-top text-right space-x-1">
+                            <button type="button" onclick="openTrackingModal('${safeOrderId}')" class="p-2 text-charcoal/60 hover:text-charcoal transition-colors" title="Manage Courier AWB &amp; COD Remittance">
+                                <i class="fa-solid fa-truck-fast"></i>
+                            </button>
+                            <button type="button" onclick="deleteOrder('${safeOrderId}')" class="p-2 text-charcoal/50 hover:text-waxRed transition-colors" title="Cancel &amp; strike order from ledger">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function updateOrderStatus(orderId, newStatus) {
+            try {
+                const updated = await apiRequest(`/api/v1/admin/orders/${encodeURIComponent(orderId)}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                const idx = orders.findIndex(o => o.orderId === orderId);
+                if (idx !== -1) orders[idx] = updated;
+                updateKPIs();
+                renderOrders();
+                showToast("Order Status Updated", `${orderId} marked as "${newStatus}" in PostgreSQL.`);
+            } catch (err) {
+                showToast("Status Update Failed", err.message || "Could not update order status.");
+                renderOrders();
+            }
+        }
+
+        function openTrackingModal(orderId) {
+            const order = orders.find(o => o.orderId === orderId);
+            if (!order) return;
+            document.getElementById('track-order-id').value = order.orderId;
+            document.getElementById('tracking-modal-heading').textContent = `AWB TRACKING — ${order.orderId}`;
+            document.getElementById('track-courier-code').value = order.tracking?.courierCode || 'BLUEDART';
+            document.getElementById('track-courier-name').value = order.tracking?.courierName || 'BlueDart Priority';
+            document.getElementById('track-awb').value = order.tracking?.awbNumber || '';
+            document.getElementById('track-shipment-state').value = order.tracking?.currentShipmentState || 'MANIFESTED';
+            document.getElementById('track-url').value = order.tracking?.trackingUrl || '';
+            document.getElementById('track-cod-remittance').value = order.codRemittanceStatus || 'PENDING';
+            document.getElementById('track-note').value = '';
+
+            const modal = document.getElementById('tracking-modal');
+            const box = document.getElementById('tracking-modal-box');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            box.classList.remove('scale-95', 'translate-y-4');
+            box.classList.add('scale-100', 'translate-y-0');
+        }
+
+        function closeTrackingModal() {
+            const modal = document.getElementById('tracking-modal');
+            const box = document.getElementById('tracking-modal-box');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            box.classList.remove('scale-100', 'translate-y-0');
+            box.classList.add('scale-95', 'translate-y-4');
+        }
+
+        async function saveOrderTracking(event) {
+            event.preventDefault();
+            const orderId = document.getElementById('track-order-id').value;
+            const trackingPayload = {
+                courierCode: document.getElementById('track-courier-code').value.trim(),
+                courierName: document.getElementById('track-courier-name').value.trim(),
+                awbNumber: document.getElementById('track-awb').value.trim(),
+                currentShipmentState: document.getElementById('track-shipment-state').value,
+                trackingUrl: document.getElementById('track-url').value.trim() || null,
+                eventNote: document.getElementById('track-note').value.trim() || undefined
+            };
+            const codRemittanceStatus = document.getElementById('track-cod-remittance').value;
+
+            try {
+                await apiRequest(`/api/v1/admin/orders/${encodeURIComponent(orderId)}/tracking`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(trackingPayload)
+                });
+                const updated = await apiRequest(`/api/v1/admin/orders/${encodeURIComponent(orderId)}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ codRemittanceStatus })
+                });
+                const idx = orders.findIndex(o => o.orderId === orderId);
+                if (idx !== -1) orders[idx] = updated;
+                renderOrders();
+                closeTrackingModal();
+                showToast("Tracking Sealed", `AWB ${trackingPayload.awbNumber} recorded for ${orderId}.`);
+            } catch (err) {
+                showToast("Tracking Error", err.message || "Could not save tracking info.");
+            }
+        }
+
+        async function deleteOrder(orderId) {
+            const order = orders.find(o => o.orderId === orderId);
+            const rowEl = document.querySelector(`[data-order-row="${orderId}"]`);
+            try {
+                const cancelled = await apiRequest(`/api/v1/admin/orders/${encodeURIComponent(orderId)}`, {
+                    method: 'DELETE'
+                });
+                const idx = orders.findIndex(o => o.orderId === orderId);
+                if (idx !== -1) orders[idx] = cancelled;
+                updateKPIs();
+
+                if (window.PaperCrumpleEffect && window.ENABLE_PAPER_CRUMPLE && rowEl && order) {
+                    window.PaperCrumpleEffect.crumpleAndFall(rowEl, {
+                        id: orderId.charCodeAt(4) || 1,
+                        name: `Order ${order.orderId} — ${order.customer}`,
+                        volume: `${(order.items || []).length} Elixir(s)`,
+                        price: Number(order.total || 0),
+                        quantity: 1
+                    }, () => {
+                        renderOrders();
+                    });
+                } else {
+                    renderOrders();
+                }
+                showToast("Order Cancelled & Audited", `Order ${orderId} cancelled and reserved stock restored.`);
+            } catch (err) {
+                showToast("Order Action Failed", err.message || "Could not cancel order.");
+            }
+        }
+
+        // Render Admin Products Grid
+        function renderAdminProducts() {
+            const grid = document.getElementById('admin-product-grid');
+
+            grid.innerHTML = products.map((product) => {
+                const imageCount = (product.images || []).filter(Boolean).length;
+                const firstImg = (product.images || []).find(Boolean);
+
+                return `
+                    <div data-admin-prod-id="${product.id}" class="paper-unfold is-visible paper-stack paper-card ribbed-paper text-charcoal p-7 relative flex flex-col justify-between shadow-2xl group">
+                        <div class="paper-sheen"></div>
+                        <div class="paper-corner-curl"></div>
+
+                        <!-- Top Right Badge -->
+                        <div class="absolute top-0 right-0 bg-charcoal text-paper px-4 py-1.5 text-xs font-cinzel tracking-widest clip-card-badge z-10">
+                            ${escapeHtmlClient(product.badge)}
+                        </div>
+
+                        <div class="relative z-10">
+                            <!-- Mini Visual Plate Preview Bar -->
+                            <div class="mb-4 h-36 bg-charcoal text-paper border border-charcoal/20 flex items-center justify-center relative overflow-hidden">
+                                ${firstImg
+                                    ? `<img src="${escapeHtmlClient(firstImg)}" alt="${escapeHtmlClient(product.name)}" class="h-full w-full object-contain p-2">`
+                                    : `<div class="text-center p-4">
+                                        <i class="fa-solid fa-wine-bottle text-2xl text-accentGold/80 mb-1.5 block"></i>
+                                        <span class="font-cinzel text-[10px] tracking-[0.2em] text-paper/60 uppercase block">${escapeHtmlClient(product.volume)} UV-Obsidian Vessel</span>
+                                       </div>`
+                                }
+                                <span class="absolute top-2 left-2 px-2 py-0.5 ${product.isActive ? 'bg-emerald-900 text-paper border-emerald-700' : 'bg-waxRed text-paper border-waxRed'} border font-cinzel text-[9px] tracking-widest uppercase">
+                                    ${product.isActive ? 'PUBLISHED (LIVE)' : 'UNPUBLISHED DRAFT'}
+                                </span>
+                                <span class="absolute bottom-2 right-2 px-2 py-0.5 bg-black/80 border border-accentGold/40 font-cinzel text-[9px] text-accentGold tracking-widest uppercase">
+                                    ${imageCount}/3 Image Plates
+                                </span>
+                            </div>
+
+                            <span class="text-[11px] uppercase font-cinzel text-accentGold font-bold tracking-widest block mb-1">${escapeHtmlClient(product.category)} (${escapeHtmlClient(product.filterTag)})</span>
+                            <h3 class="font-cinzel text-xl font-bold mb-1.5">${escapeHtmlClient(product.name)}</h3>
+                            <div class="text-xs font-serif italic text-charcoal/75 mb-3 border-l-2 border-accentGold pl-2.5">${escapeHtmlClient(product.notes)}</div>
+                            <p class="text-xs text-charcoal/80 leading-relaxed mb-5 line-clamp-3">${escapeHtmlClient(product.description)}</p>
+                        </div>
+
+                        <div class="pt-5 border-t border-charcoal/15 flex items-center justify-between relative z-10">
+                            <div>
+                                <span class="text-[10px] font-cinzel tracking-wider text-charcoal/60 block">VESSEL: ${escapeHtmlClient(product.volume)} &bull; STOCK: ${product.stockQuantity ?? 25}</span>
+                                <span class="font-cinzel font-bold text-2xl">$${Number(product.price).toFixed(2)}</span>
+                            </div>
+
+                            <div class="flex items-center space-x-2">
+                                <button type="button" onclick="openEditorModal('${product.id}')" class="bg-charcoal text-paper px-4 py-2.5 font-cinzel text-[11px] font-bold tracking-widest hover:bg-neutral-800 transition-colors flex items-center space-x-2 shadow">
+                                    <i class="fa-solid fa-pen-nib text-accentGold text-[10px]"></i>
+                                    <span>EDIT FOLIO</span>
+                                </button>
+                                <button type="button" onclick="deleteProduct('${product.id}')" class="w-10 h-10 border border-charcoal/25 bg-paperDark hover:bg-waxRed hover:text-paper text-charcoal transition-colors flex items-center justify-center" title="Delete Product">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            bindPaperCardPhysics();
+        }
+
+        // Open Product Editor Modal (Create or Edit)
+        function openEditorModal(productId) {
+            const modal = document.getElementById('editor-modal');
+            const box = document.getElementById('editor-modal-box');
+            const heading = document.getElementById('editor-modal-heading');
+
+            if (productId === null || productId === undefined || productId === '') {
+                heading.textContent = 'UPLOAD NEW ELIXIR FOLIO';
+                document.getElementById('edit-product-id').value = '';
+                document.getElementById('edit-name').value = '';
+                document.getElementById('edit-price').value = '';
+                document.getElementById('edit-volume').value = '250ml';
+                document.getElementById('edit-category').value = 'Gastronomic Edible';
+                document.getElementById('edit-filter-tag').value = 'Edible';
+                document.getElementById('edit-badge').value = 'New Release';
+                document.getElementById('edit-notes').value = '';
+                document.getElementById('edit-origin').value = '';
+                document.getElementById('edit-extraction').value = 'First Cold-Press (<27°C)';
+                document.getElementById('edit-description').value = '';
+                document.getElementById('edit-long-description').value = '';
+                document.getElementById('edit-ritual').value = '';
+                document.getElementById('edit-stock').value = '0';
+                document.getElementById('edit-is-active').checked = false;
+                editingImages = ['', '', ''];
+            } else {
+                const p = products.find(item => String(item.id) === String(productId) || String(item.uuid) === String(productId));
+                if (!p) return;
+                heading.textContent = `EDIT FOLIO — ${p.name.toUpperCase()}`;
+                document.getElementById('edit-product-id').value = String(p.uuid || p.id);
+                document.getElementById('edit-name').value = p.name || '';
+                document.getElementById('edit-price').value = p.price ?? '';
+                document.getElementById('edit-volume').value = p.volume || '';
+                document.getElementById('edit-category').value = p.category || '';
+                document.getElementById('edit-filter-tag').value = p.filterTag || 'Edible';
+                document.getElementById('edit-badge').value = p.badge || 'Reserve';
+                document.getElementById('edit-notes').value = p.notes || '';
+                document.getElementById('edit-origin').value = p.origin || '';
+                document.getElementById('edit-extraction').value = p.extraction || '';
+                document.getElementById('edit-description').value = p.description || '';
+                document.getElementById('edit-long-description').value = p.longDescription || '';
+                document.getElementById('edit-ritual').value = p.ritual || '';
+                document.getElementById('edit-stock').value = String(p.stockQuantity ?? 0);
+                document.getElementById('edit-is-active').checked = Boolean(p.isActive);
+                editingImages = [
+                    (p.images && p.images[0]) || '',
+                    (p.images && p.images[1]) || '',
+                    (p.images && p.images[2]) || ''
+                ];
+            }
+
+            refreshImageSlotPreviews();
+
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            box.classList.remove('scale-95', 'translate-y-4');
+            box.classList.add('scale-100', 'translate-y-0');
+        }
+
+        function closeEditorModal() {
+            const modal = document.getElementById('editor-modal');
+            const box = document.getElementById('editor-modal-box');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            box.classList.remove('scale-100', 'translate-y-0');
+            box.classList.add('scale-95', 'translate-y-4');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeEditorModal();
+                closeTrackingModal();
+            }
+        });
+
+        // Image Slot Preview & File Upload Compression (re-encodes into safe WebP before upload)
+        function refreshImageSlotPreviews() {
+            for (let i = 0; i < 3; i++) {
+                const previewEl = document.getElementById(`img-preview-${i}`);
+                const urlInput = document.getElementById(`img-url-${i}`);
+                const src = editingImages[i] || '';
+                urlInput.value = src.startsWith('data:') ? '[Uploaded Local WebP Binary]' : src;
+
+                if (src) {
+                    previewEl.innerHTML = `<img src="${escapeHtmlClient(src)}" alt="Plate ${i + 1}" class="h-full w-full object-contain p-1">`;
+                } else {
+                    previewEl.innerHTML = `<span class="text-[10px] font-cinzel text-paper/40 tracking-widest">NO IMAGE</span>`;
+                }
+            }
+        }
+
+        function handleImageUrlInput(slotIdx, val) {
+            if (val === '[Uploaded Local WebP Binary]') return;
+            editingImages[slotIdx] = val.trim();
+            refreshImageSlotPreviews();
+        }
+
+        function clearImageSlot(slotIdx) {
+            editingImages[slotIdx] = '';
+            refreshImageSlotPreviews();
+        }
+
+        function handleImageUpload(event, slotIdx) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            if (file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')) {
+                showToast("Format Rejected", "SVG files are forbidden for security. Please upload PNG, JPEG, or WebP.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = new Image();
+                img.onload = function () {
+                    const maxDim = 700;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) {
+                            h = Math.round((h * maxDim) / w);
+                            w = maxDim;
+                        } else {
+                            w = Math.round((w * maxDim) / h);
+                            h = maxDim;
+                        }
+                    }
+                    const c = document.createElement('canvas');
+                    c.width = w;
+                    c.height = h;
+                    const ctx = c.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    editingImages[slotIdx] = c.toDataURL('image/webp', 0.86);
+                    refreshImageSlotPreviews();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Save Product (New or Edited) to PostgreSQL Backend
+        async function saveProductFromModal(event) {
+            event.preventDefault();
+            const rawId = document.getElementById('edit-product-id').value.trim();
+            const priceFloat = parseFloat(document.getElementById('edit-price').value) || 0;
+            const pricePaise = Math.max(0, Math.round(priceFloat * 100));
+            const filterTag = document.getElementById('edit-filter-tag').value === 'Aromatic' ? 'Aromatic' : 'Edible';
+
+            const payload = {
+                name: document.getElementById('edit-name').value.trim(),
+                pricePaise,
+                mrpPaise: pricePaise,
+                volume: document.getElementById('edit-volume').value.trim(),
+                category: document.getElementById('edit-category').value.trim(),
+                filterTag,
+                division: filterTag === 'Aromatic' ? 'ATMOSPHERE' : 'TABLE',
+                badge: document.getElementById('edit-badge').value.trim(),
+                notes: document.getElementById('edit-notes').value.trim(),
+                origin: document.getElementById('edit-origin').value.trim(),
+                extraction: document.getElementById('edit-extraction').value.trim(),
+                description: document.getElementById('edit-description').value.trim(),
+                longDescription: document.getElementById('edit-long-description').value.trim(),
+                ritual: document.getElementById('edit-ritual').value.trim(),
+                stockQuantity: Math.max(0, parseInt(document.getElementById('edit-stock').value || '0', 10) || 0),
+                isActive: Boolean(document.getElementById('edit-is-active').checked),
+                images: [...editingImages]
+            };
+
+            try {
+                if (rawId) {
+                    const updated = await apiRequest(`/api/v1/admin/products/${encodeURIComponent(rawId)}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify(payload)
+                    });
+                    const idx = products.findIndex(p => String(p.id) === String(rawId) || String(p.uuid) === String(rawId));
+                    if (idx !== -1) products[idx] = updated;
+                    showToast("Folio Updated", `${updated.name} saved to PostgreSQL.`);
+                } else {
+                    const created = await apiRequest('/api/v1/admin/products', {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+                    products.unshift(created);
+                    showToast("New Elixir Uploaded", `${created.name} added to the vault.`);
+                }
+                updateKPIs();
+                renderAdminProducts();
+                closeEditorModal();
+            } catch (err) {
+                showToast("Save Failed", err.message || "Could not save product folio.");
+            }
+        }
+
+        // Delete / Archive Product (with 3D PaperCrumple animation)
+        async function deleteProduct(productId) {
+            const prod = products.find(p => String(p.id) === String(productId) || String(p.uuid) === String(productId));
+            if (!prod) return;
+
+            const cardEl = document.querySelector(`[data-admin-prod-id="${prod.id}"]`);
+            try {
+                await apiRequest(`/api/v1/admin/products/${encodeURIComponent(prod.uuid || prod.id)}`, {
+                    method: 'DELETE'
+                });
+                products = products.filter(p => p.uuid !== prod.uuid && String(p.id) !== String(prod.id));
+                updateKPIs();
+
+                if (window.PaperCrumpleEffect && window.ENABLE_PAPER_CRUMPLE && cardEl) {
+                    window.PaperCrumpleEffect.crumpleAndFall(cardEl, {
+                        id: Number(prod.legacyId) || 1,
+                        name: prod.name,
+                        volume: prod.volume,
+                        price: Number(prod.price),
+                        quantity: 1
+                    }, () => {
+                        renderAdminProducts();
+                    });
+                } else {
+                    renderAdminProducts();
+                }
+
+                showToast("Elixir Struck from Vault", `${prod.name} has been removed.`);
+            } catch (err) {
+                showToast("Delete Failed", err.message || "Unable to remove product.");
+            }
+        }
+
+        // Populate & Save Website CMS Content via /api/v1/admin/site-content
+        function populateContentForm() {
+            document.getElementById('cms-hero-banner').value = siteContent.heroBanner || '';
+            document.getElementById('cms-hero-title').value = siteContent.heroTitleHtml || '';
+            document.getElementById('cms-hero-subtitle').value = siteContent.heroSubtitle || '';
+            document.getElementById('cms-manifesto-title').value = siteContent.manifestoTitle || '';
+            document.getElementById('cms-manifesto-p1').value = siteContent.manifestoP1 || '';
+            document.getElementById('cms-manifesto-p2').value = siteContent.manifestoP2 || '';
+        }
+
+        async function saveSiteContent(event) {
+            event.preventDefault();
+            const payload = {
+                heroBanner: document.getElementById('cms-hero-banner').value.trim(),
+                heroTitleHtml: document.getElementById('cms-hero-title').value.trim(),
+                heroSubtitle: document.getElementById('cms-hero-subtitle').value.trim(),
+                manifestoTitle: document.getElementById('cms-manifesto-title').value.trim(),
+                manifestoP1: document.getElementById('cms-manifesto-p1').value.trim(),
+                manifestoP2: document.getElementById('cms-manifesto-p2').value.trim()
+            };
+            try {
+                siteContent = await apiRequest('/api/v1/admin/site-content', {
+                    method: 'PATCH',
+                    body: JSON.stringify(payload)
+                });
+                populateContentForm();
+                showToast("Storefront Content Published", "Hero & Manifesto inscriptions persisted to PostgreSQL.");
+            } catch (err) {
+                showToast("Publish Failed", err.message || "Could not update site content.");
+            }
+        }
+
+        async function resetSiteContentToDefaults() {
+            try {
+                siteContent = await apiRequest('/api/v1/admin/site-content', {
+                    method: 'PATCH',
+                    body: JSON.stringify(defaultSiteContent)
+                });
+                populateContentForm();
+                showToast("Default Archive Restored", "Storefront copy restored to original inscriptions.");
+            } catch (err) {
+                showToast("Reset Failed", err.message || "Could not restore default copy.");
+            }
+        }
+
+        // One-Time Safe Legacy localStorage Migration Utility (Dry-Run + Execute)
+        async function migrateLegacyLocalStorage() {
+            try {
+                const rawProds = JSON.parse(localStorage.getItem('vatsom_products_v1') || '[]');
+                const rawOrders = JSON.parse(localStorage.getItem('vatsom_orders_v1') || '[]');
+                const rawContent = JSON.parse(localStorage.getItem('vatsom_site_content_v1') || 'null');
+
+                const dryRunReport = await apiRequest('/api/v1/admin/migrate-localstorage', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        dryRun: true,
+                        products: Array.isArray(rawProds) ? rawProds : [],
+                        orders: Array.isArray(rawOrders) ? rawOrders : [],
+                        ...(rawContent ? { siteContent: rawContent } : {})
+                    })
+                });
+
+                const proceed = window.confirm(
+                    `Legacy localStorage Dry-Run Audit:\n` +
+                    `• New Products to Import: ${dryRunReport.productsImported}\n` +
+                    `• Duplicate Products Skipped: ${dryRunReport.productsSkippedDuplicates}\n` +
+                    `• Demo/Simulated Orders Skipped: ${dryRunReport.demoOrdersSkipped}\n\n` +
+                    `Proceed with importing verified records into PostgreSQL and clearing legacy localStorage keys?`
+                );
+                if (!proceed) return;
+
+                const commitReport = await apiRequest('/api/v1/admin/migrate-localstorage', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        dryRun: false,
+                        products: Array.isArray(rawProds) ? rawProds : [],
+                        orders: Array.isArray(rawOrders) ? rawOrders : [],
+                        ...(rawContent ? { siteContent: rawContent } : {})
+                    })
+                });
+
+                localStorage.removeItem('vatsom_products_v1');
+                localStorage.removeItem('vatsom_orders_v1');
+                localStorage.removeItem('vatsom_site_content_v1');
+
+                await loadAdminDataFromServer();
+                showToast(
+                    "Migration Complete",
+                    `Imported ${commitReport.productsImported} new vessel(s); legacy localStorage cleared.`
+                );
+            } catch (err) {
+                showToast("Migration Notice", err.message || "Could not migrate localStorage records.");
+            }
+        }
+
+        // Toast Notification
+        let toastTimeout;
+        function showToast(title, desc) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-desc').textContent = desc;
+            toast.classList.remove('translate-y-24', 'rotate-2', 'opacity-0');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('translate-y-24', 'rotate-2', 'opacity-0');
+            }, 3400);
+        }
+
+        // IntersectionObserver for 3D Paper Unfold Reveals
+        const unfoldObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    const delay = parseInt(el.dataset.delay || '0', 10);
+                    if (delay > 0) el.style.transitionDelay = `${delay}ms`;
+                    el.classList.add('is-visible');
+                    setTimeout(() => {
+                        el.style.transitionDelay = '0ms';
+                    }, delay + 750);
+                    unfoldObserver.unobserve(el);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        function observePaperElements() {
+            document.querySelectorAll('.paper-unfold:not(.is-visible)').forEach(el => {
+                unfoldObserver.observe(el);
+            });
+        }
+
+        // 60fps Paper Card Tilt Physics
+        function bindPaperCardPhysics() {
+            document.querySelectorAll('.paper-card').forEach(card => {
+                if (card.dataset.tiltBound === 'true') return;
+                card.dataset.tiltBound = 'true';
+
+                let rafId = null;
+                card.addEventListener('mouseenter', () => {
+                    card.style.transitionDelay = '0ms';
+                    card.classList.add('is-hovering');
+                });
+                card.addEventListener('mousemove', (e) => {
+                    if (rafId) cancelAnimationFrame(rafId);
+                    rafId = requestAnimationFrame(() => {
+                        const rect = card.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -4.0;
+                        const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 4.0;
+                        card.style.setProperty('--mouse-x', `${x}px`);
+                        card.style.setProperty('--mouse-y', `${y}px`);
+                        card.style.transform = `perspective(1200px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-4px)`;
+                    });
+                });
+                card.addEventListener('mouseleave', () => {
+                    if (rafId) cancelAnimationFrame(rafId);
+                    card.classList.remove('is-hovering');
+                    card.style.transform = '';
+                });
+            });
+        }
+
+        // Interactive 3D Origami V Logo Physics
+        function bindOrigamiLogoPhysics() {
+            document.querySelectorAll('.origami-logo-wrap').forEach(logo => {
+                if (logo.dataset.logoBound === 'true') return;
+                logo.dataset.logoBound = 'true';
+                let rafId = null;
+                logo.addEventListener('mouseenter', () => logo.classList.add('is-hovering'));
+                logo.addEventListener('mousemove', (e) => {
+                    if (rafId) cancelAnimationFrame(rafId);
+                    rafId = requestAnimationFrame(() => {
+                        const rect = logo.getBoundingClientRect();
+                        const x = (e.clientX - rect.left) / rect.width - 0.5;
+                        const y = (e.clientY - rect.top) / rect.height - 0.5;
+                        logo.style.transform = `perspective(900px) rotateX(${(y * -22).toFixed(2)}deg) rotateY(${(x * 22).toFixed(2)}deg) scale(1.06)`;
+                    });
+                });
+                logo.addEventListener('mouseleave', () => {
+                    if (rafId) cancelAnimationFrame(rafId);
+                    logo.classList.remove('is-hovering');
+                    logo.style.transform = '';
+                });
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            observePaperElements();
+            bindPaperCardPhysics();
+            bindOrigamiLogoPhysics();
+            initAdminAuthGate();
+        });
+    </script>
+</body>
+</html>
+

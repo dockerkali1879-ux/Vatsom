@@ -1,0 +1,26 @@
+{
+  "name": "vatsom-ecommerce-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VATSOM — Production Cloudflare Workers & Neon PostgreSQL Ecommerce Backend",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/sync-assets.mjs && npx wrangler dev",
+    "build": "node scripts/sync-assets.mjs && tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "sync:assets": "node scripts/sync-assets.mjs"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "jose": "^5.9.6",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250214.0",
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3",
+    "vitest": "^5.0.5"
+  }
+}

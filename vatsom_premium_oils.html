@@ -1,0 +1,2249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vatsom — Premium Edible & Aromatic Oils</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lenis Smooth Scroll -->
+    <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+    <!-- [EXPERIMENTAL TEST: PaperCrumple 3D Removal] Remove these 2 scripts to fallback to standard removal -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="paper_crumple_effect.js"></script>
+    <!-- Google Identity Services & Cloudflare Turnstile -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        paper: '#f4f1ea',
+                        paperDark: '#e5dec9',
+                        paperEdge: '#d6ccb2',
+                        charcoal: '#121212',
+                        accentGold: '#c5a059',
+                        waxRed: '#7c1d1d',
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Smooth Scroll & Base Setup */
+        html.lenis, html.lenis body {
+            height: auto;
+        }
+        .lenis.lenis-smooth {
+            scroll-behavior: auto !important;
+        }
+        .lenis.lenis-smooth [data-lenis-prevent] {
+            overscroll-behavior: contain;
+        }
+
+        :root {
+            --scroll-vel: 0;
+        }
+
+        /* Tactile Ribbed Laid Paper Texture with Fibre Grain */
+        .ribbed-paper {
+            background-color: #f4f1ea;
+            background-image: 
+                /* Subtle vertical chain lines (every 28px) */
+                 repeating-linear-gradient(90deg, rgba(255,255,255,0.35) 0px, rgba(255,255,255,0.35) 1px, transparent 1px, transparent 28px),
+                /* Fine horizontal laid paper ribs */
+                repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 3px),
+                /* Vertical micro-rib */
+                linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px),
+                /* Warm vignette aged shading */
+                radial-gradient(ellipse at center, rgba(255,255,255,0.5) 0%, rgba(214,204,178,0.35) 100%);
+            background-size: 28px 100%, 100% 3px, 6px 100%, 100% 100%;
+            box-shadow: 
+                0 1px 2px rgba(0,0,0,0.18),
+                0 12px 28px -6px rgba(0,0,0,0.55),
+                inset 0 0 0 1px rgba(255,255,255,0.6),
+                inset 0 -3px 8px rgba(180,165,135,0.25);
+        }
+        
+        .ribbed-paper-dark {
+            background-color: #e5dec9;
+            background-image: 
+                repeating-linear-gradient(0deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 3px),
+                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 100% 3px, 5px 100%;
+        }
+
+        /* Stacked Paper Sheet Edges Underneath */
+        .paper-stack {
+            position: relative;
+        }
+        .paper-stack::before,
+        .paper-stack::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: #e5dec9;
+            z-index: -1;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.45);
+        }
+        .paper-stack::before {
+            transform: translate(4px, 4px) rotate(0.6deg);
+        }
+        .paper-stack::after {
+            background-color: #d8ceb4;
+            transform: translate(-3px, 7px) rotate(-0.8deg);
+        }
+        .paper-stack:hover::before {
+            transform: translate(7px, 7px) rotate(1.4deg);
+        }
+        .paper-stack:hover::after {
+            transform: translate(-6px, 11px) rotate(-1.6deg);
+        }
+
+        /* Realistic Page Card Physics */
+        .paper-card {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
+            overflow: hidden;
+        }
+        .paper-card.is-hovering {
+            transition: transform 0.08s ease-out, box-shadow 0.25s ease-out !important;
+            transition-delay: 0ms !important;
+        }
+
+        /* Dynamic light sheen across paper surface */
+        .paper-card .paper-sheen {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(550px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,255,255,0.45), transparent 55%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .paper-card:hover .paper-sheen {
+            opacity: 1;
+        }
+
+        /* Subtle Top-Left Corner Fold Accent (avoids overlapping bottom-right action button) */
+        .paper-corner-curl {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 0px;
+            height: 0px;
+            background: linear-gradient(135deg, #d8ceb4 0%, #f4f1ea 48%, #c9bda0 50%, #1a1a1a 52%, #121212 100%);
+            box-shadow: -3px -3px 8px rgba(0,0,0,0.22);
+            transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 20;
+            pointer-events: none;
+        }
+        .paper-card:hover .paper-corner-curl {
+            width: 22px;
+            height: 22px;
+        }
+
+        /* 3D Paper Unfold / Scroll Unroll Reveal Animations */
+        .paper-unfold {
+            opacity: 0;
+            transform-origin: top center;
+            transform: perspective(1400px) rotateX(-24deg) translateY(30px) scale(0.97);
+            transition: 
+                opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform, opacity;
+        }
+        .paper-unfold.is-visible {
+            opacity: 1;
+            transform: perspective(1400px) rotateX(0deg) translateY(0px) scale(1);
+        }
+
+        /* Scroll Velocity Paper Flutter */
+        .paper-velocity-react {
+            transition: transform 0.15s ease-out;
+            transform: perspective(1000px) rotateX(calc(var(--scroll-vel, 0) * 1deg)) SkewY(calc(var(--scroll-vel, 0) * 0.25deg));
+        }
+
+        /* Unrolling Parchment Scroll Container */
+        .parchment-roller {
+            height: 14px;
+            background: linear-gradient(180deg, #3a2e21 0%, #1f1812 50%, #0d0a07 100%);
+            border-top: 1px solid rgba(197, 160, 89, 0.45);
+            border-bottom: 1px solid rgba(197, 160, 89, 0.25);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+            position: relative;
+        }
+        .parchment-roller::before,
+        .parchment-roller::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            width: 14px;
+            height: 18px;
+            background: linear-gradient(180deg, #e5c67b 0%, #c5a059 50%, #7d6029 100%);
+            border-radius: 2px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+        }
+        .parchment-roller::before { left: -8px; }
+        .parchment-roller::after { right: -8px; }
+
+        /* Triangular clip paths */
+        .clip-triangle {
+            clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+        }
+        
+        .clip-triangle-hero {
+            clip-path: polygon(0% 0%, 100% 0%, 94% 100%, 6% 100%);
+        }
+
+        .clip-card-badge {
+            clip-path: polygon(0 0, 100% 0%, 80% 100%, 0% 100%);
+        }
+
+        /* Realistic 3D Floating Paper Flutter */
+        @keyframes paperFlutter {
+            0% { transform: perspective(800px) translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+            25% { transform: perspective(800px) translate3d(8px, -14px, 20px) rotateX(14deg) rotateY(-12deg) rotateZ(4deg); }
+            50% { transform: perspective(800px) translate3d(-6px, -24px, 10px) rotateX(-10deg) rotateY(16deg) rotateZ(-3deg); }
+            75% { transform: perspective(800px) translate3d(-10px, -10px, 25px) rotateX(12deg) rotateY(-8deg) rotateZ(6deg); }
+            100% { transform: perspective(800px) translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+        }
+
+        .floating-paper-leaf {
+            animation: paperFlutter 11s ease-in-out infinite;
+            transform-style: preserve-3d;
+        }
+
+        .floating-paper-leaf-delayed {
+            animation: paperFlutter 14s ease-in-out 2.5s infinite;
+            transform-style: preserve-3d;
+        }
+
+        /* Cart Drawer Unfold Animation */
+        #cart-drawer {
+            transform-origin: right center;
+            transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease;
+        }
+        #cart-drawer.drawer-closed {
+            transform: perspective(1500px) translateX(100%) rotateY(-25deg);
+        }
+        #cart-drawer.drawer-open {
+            transform: perspective(1500px) translateX(0%) rotateY(0deg);
+        }
+
+        /* Wax Seal Pulse */
+        @keyframes stampPress {
+            0% { transform: scale(2.2) rotate(-15deg); opacity: 0; }
+            60% { transform: scale(0.92) rotate(3deg); opacity: 1; }
+            80% { transform: scale(1.04) rotate(-1deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .stamp-animate {
+            animation: stampPress 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        /* Scroll Progress Ribbon */
+        #scroll-ribbon {
+            transform-origin: top;
+            transition: transform 0.1s linear;
+        }
+
+        /* Interactive 3D Origami V Logo */
+        .origami-logo-wrap {
+            position: relative;
+            display: inline-block;
+            transform-style: preserve-3d;
+            perspective: 900px;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.75));
+        }
+        .origami-logo-wrap.is-hovering {
+            transition: transform 0.08s ease-out, filter 0.2s ease-out !important;
+        }
+        .origami-logo-base {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+        /* Top-Left Origami Fold Flap Layer (exact image slice that hinges in 3D on hover) */
+        .origami-flap-left {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            clip-path: polygon(6.8% 2.4%, 30.3% 2.4%, 23.1% 32.8%, 12.1% 32.8%, 1.9% 20.8%);
+            transform-origin: 30.3% 2.4%;
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease;
+            will-change: transform, filter;
+        }
+        /* Right Origami Wing Flap Layer */
+        .origami-flap-right {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            clip-path: polygon(89.9% 2.4%, 98.5% 32.2%, 81.0% 32.2%);
+            transform-origin: 89.9% 2.4%;
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease;
+            will-change: transform, filter;
+        }
+        .origami-logo-wrap:hover .origami-flap-left {
+            transform: translateZ(10px) rotateY(-16deg) rotateX(10deg) scale(1.02);
+            filter: brightness(1.08) drop-shadow(3px 6px 6px rgba(0, 0, 0, 0.55));
+        }
+        .origami-logo-wrap:hover .origami-flap-right {
+            transform: translateZ(6px) rotateY(14deg) rotateX(6deg);
+            filter: brightness(1.12);
+        }
+        .origami-logo-wrap:active .origami-flap-left {
+            transform: translateZ(18px) rotateY(-26deg) rotateX(16deg) scale(1.04);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d0d0d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c5a059;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-charcoal text-paper font-sans antialiased selection:bg-paper selection:text-charcoal overflow-x-hidden">
+
+    <!-- Right-side Vertical Parchment Scroll Progress Indicator -->
+    <div class="fixed right-3 top-1/2 -translate-y-1/2 h-36 w-1 bg-paper/10 z-40 hidden lg:block overflow-hidden rounded-full">
+        <div id="scroll-ribbon" class="w-full h-full bg-accentGold scale-y-0"></div>
+    </div>
+
+    <!-- Floating 3D Paper Shards Background Decoration (Parallax + Flutter) -->
+    <div id="parallax-shards" class="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-25">
+        <div data-speed="0.18" class="parallax-shard absolute top-16 left-12">
+            <div class="w-24 h-24 ribbed-paper rounded-sm blur-[0.5px] floating-paper-leaf shadow-2xl"></div>
+        </div>
+        <div data-speed="-0.25" class="parallax-shard absolute bottom-24 right-14">
+            <div class="w-32 h-32 ribbed-paper-dark clip-triangle floating-paper-leaf-delayed shadow-2xl"></div>
+        </div>
+        <div data-speed="0.32" class="parallax-shard absolute top-1/2 right-1/4">
+            <div class="w-16 h-16 ribbed-paper clip-triangle opacity-50 floating-paper-leaf"></div>
+        </div>
+        <div data-speed="-0.15" class="parallax-shard absolute top-2/3 left-1/5">
+            <div class="w-20 h-12 ribbed-paper-dark clip-triangle-hero opacity-35 floating-paper-leaf-delayed"></div>
+        </div>
+    </div>
+
+    <!-- Notification Toast (Paper Slip Unfold) -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 rotate-2 opacity-0 pointer-events-none transition-all duration-500 cubic-bezier(0.22,1,0.36,1) ribbed-paper text-charcoal px-6 py-4 shadow-2xl border-l-4 border-accentGold flex items-center space-x-4">
+        <div class="w-9 h-9 rounded-full bg-charcoal text-accentGold flex items-center justify-center shrink-0 shadow">
+            <i class="fa-solid fa-feather-pointed text-sm"></i>
+        </div>
+        <div>
+            <p class="font-cinzel font-bold text-sm tracking-wider" id="toast-title">Inscribed on Slip</p>
+            <p class="text-xs text-charcoal/80" id="toast-desc">Item successfully placed on your parchment slip.</p>
+        </div>
+    </div>
+
+    <!-- Cart Drawer Overlay -->
+    <div id="cart-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-500"></div>
+
+    <!-- Cart Drawer (3D Folded Paper Slip Style) -->
+    <div id="cart-drawer" data-lenis-prevent class="drawer-closed fixed top-0 right-0 h-full w-full max-w-md ribbed-paper text-charcoal z-50 shadow-2xl flex flex-col border-l-2 border-paperEdge">
+        <!-- Decorative Sawtooth / Torn Paper Top Edge -->
+        <div class="p-6 border-b border-charcoal/15 flex items-center justify-between bg-paperDark/60 relative">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-scroll text-xl text-charcoal"></i>
+                <div>
+                    <h3 class="font-cinzel text-xl font-bold tracking-widest leading-none">ORDER PARCHMENT</h3>
+                    <span class="text-[10px] font-cinzel tracking-[0.2em] text-charcoal/60 uppercase">Atelier Allocation Slip</span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="crumple-toggle-btn" onclick="toggleCrumpleEffect()" title="Experimental Test: Toggle 3D Paper Crumple on item removal" class="px-2.5 py-1 text-[10px] font-cinzel font-bold tracking-wider bg-charcoal text-accentGold border border-charcoal/20 hover:opacity-85 transition-all">
+                    CRUMPLE: ON
+                </button>
+                <button id="close-cart" class="w-10 h-10 rounded-full hover:bg-charcoal/10 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Cart Items Container -->
+        <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4 divide-y divide-charcoal/10">
+            <!-- Dynamically populated -->
+        </div>
+
+        <!-- Wax Seal Stamp Feedback inside Drawer -->
+        <div id="wax-seal-badge" class="hidden py-4 px-6 bg-paperDark/90 border-t border-charcoal/15 flex items-center justify-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-waxRed text-paper flex items-center justify-center font-cinzel font-bold text-xs shadow-lg border-2 border-accentGold/60 stamp-animate">
+                V
+            </div>
+            <span class="font-cinzel text-xs font-bold tracking-widest text-waxRed uppercase">Wax Sealed &amp; Recorded</span>
+        </div>
+
+        <!-- Cart Footer -->
+        <div class="p-6 border-t border-charcoal/20 bg-paperDark/70">
+            <div class="space-y-2 mb-4">
+                <div class="flex justify-between text-sm text-charcoal/70">
+                    <span>Subtotal</span>
+                    <span id="cart-subtotal">$0.00</span>
+                </div>
+                <div class="flex justify-between text-sm text-charcoal/70">
+                    <span>Ribbed Parchment Wrap &amp; Wax Seal</span>
+                    <span class="font-serif italic text-charcoal">Complimentary</span>
+                </div>
+                <div class="flex justify-between font-cinzel font-bold text-lg text-charcoal pt-3 border-t border-charcoal/20">
+                    <span>Total Investment</span>
+                    <span id="cart-total">$0.00</span>
+                </div>
+            </div>
+            <button onclick="checkout()" class="w-full bg-charcoal text-paper py-4 font-cinzel font-semibold tracking-widest hover:bg-neutral-800 active:scale-[0.99] transition-all flex items-center justify-center space-x-3 shadow-lg group">
+                <span>SEAL &amp; DISPATCH ORDER</span>
+                <i class="fa-solid fa-stamp text-accentGold group-hover:rotate-12 transition-transform"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Product Detail Pop-Up Modal (Parchment Folio Style) -->
+    <div id="product-modal" data-lenis-prevent class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 opacity-0 pointer-events-none transition-opacity duration-300">
+        <!-- Backdrop (Click anywhere outside to close) -->
+        <div id="product-modal-backdrop" onclick="closeProductModal()" class="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
+
+        <!-- Modal Box -->
+        <div id="product-modal-box" class="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto ribbed-paper text-charcoal shadow-2xl border border-paperEdge transform scale-95 translate-y-4 transition-all duration-300">
+            <!-- Top-Right Close Cross Button -->
+            <button onclick="closeProductModal()" aria-label="Close product details" class="absolute top-4 right-4 z-30 w-10 h-10 rounded-full bg-charcoal text-paper hover:bg-neutral-800 hover:text-accentGold flex items-center justify-center transition-colors shadow-lg">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12">
+                <!-- Left Column: Product Image Gallery Frame (Ready for Photography) -->
+                <div class="lg:col-span-5 bg-charcoal text-paper p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-charcoal/20">
+                    <!-- Subtle Origami V Watermark -->
+                    <img src="vatsom_logo.png" alt="" aria-hidden="true" class="absolute -bottom-10 -left-10 w-64 opacity-[0.04] pointer-events-none select-none">
+
+                    <div class="flex items-center justify-between z-10 mb-4">
+                        <span id="modal-badge" class="px-3 py-1 bg-accentGold text-charcoal font-cinzel text-[10px] font-bold tracking-widest uppercase">Bestseller</span>
+                        <span id="modal-folio-code" class="font-cinzel text-[10px] tracking-[0.25em] text-paper/50 uppercase">FOLIO NO. 01</span>
+                    </div>
+
+                    <!-- Primary Image Display Stage -->
+                    <div id="modal-image-stage" class="relative my-auto py-8 flex flex-col items-center justify-center min-h-[260px] border border-paper/10 bg-neutral-950/60 p-6 group">
+                        <!-- Corner Frame Accents -->
+                        <div class="absolute top-2 left-2 w-3 h-3 border-t border-l border-accentGold/60"></div>
+                        <div class="absolute top-2 right-2 w-3 h-3 border-t border-r border-accentGold/60"></div>
+                        <div class="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-accentGold/60"></div>
+                        <div class="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-accentGold/60"></div>
+
+                        <!-- Dynamic Image or Architectural Vessel Placeholder -->
+                        <div id="modal-visual-content" class="flex flex-col items-center justify-center text-center transition-all duration-300">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Gallery View Selector Thumbnails -->
+                    <div class="mt-5 z-10">
+                        <div class="text-[10px] font-cinzel tracking-[0.2em] text-paper/50 uppercase mb-2 text-center">Visual Plates (Image Slots Ready)</div>
+                        <div class="grid grid-cols-3 gap-2.5" id="modal-gallery-thumbs">
+                            <button onclick="switchModalPlate(0)" data-plate="0" class="modal-plate-btn py-2 px-2 border border-accentGold bg-paper/10 text-paper font-cinzel text-[10px] tracking-wider uppercase transition-all">
+                                I. Vessel
+                            </button>
+                            <button onclick="switchModalPlate(1)" data-plate="1" class="modal-plate-btn py-2 px-2 border border-paper/15 hover:border-paper/40 text-paper/60 font-cinzel text-[10px] tracking-wider uppercase transition-all">
+                                II. Botanical
+                            </button>
+                            <button onclick="switchModalPlate(2)" data-plate="2" class="modal-plate-btn py-2 px-2 border border-paper/15 hover:border-paper/40 text-paper/60 font-cinzel text-[10px] tracking-wider uppercase transition-all">
+                                III. Pour
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Product Dossier & Add to Cart Section -->
+                <div class="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-between">
+                    <div>
+                        <span id="modal-category" class="text-xs uppercase font-cinzel text-accentGold font-bold tracking-[0.25em] block mb-2">Edible &amp; Therapeutic</span>
+                        <h2 id="modal-title" class="font-cinzel text-2xl sm:text-3xl font-bold text-charcoal leading-tight mb-3 pr-8">Cold-Pressed Black Seed Oil</h2>
+                        <div id="modal-notes" class="text-xs font-serif italic text-charcoal/80 mb-5 tracking-wide border-l-2 border-accentGold pl-3 py-0.5">
+                            Nigella Sativa | Pungent, Spicy, Deep Herbal
+                        </div>
+
+                        <p id="modal-description" class="text-sm text-charcoal/85 leading-relaxed mb-6">
+                            Sourced from pristine Egyptian fields, mechanically expressed without heat to safeguard high thymoquinone concentration.
+                        </p>
+
+                        <!-- Botanical Specifications Grid -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 bg-paperDark/65 border border-charcoal/15 mb-6">
+                            <div>
+                                <span class="text-[10px] font-cinzel tracking-widest text-charcoal/55 uppercase block">Origin</span>
+                                <span id="modal-origin" class="text-xs font-cinzel font-bold text-charcoal">Faiyum Oasis, Egypt</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-cinzel tracking-widest text-charcoal/55 uppercase block">Extraction</span>
+                                <span id="modal-extraction" class="text-xs font-cinzel font-bold text-charcoal">First Cold-Press (&lt;27°C)</span>
+                            </div>
+                            <div class="col-span-2 sm:col-span-1">
+                                <span class="text-[10px] font-cinzel tracking-widest text-charcoal/55 uppercase block">Vessel Volume</span>
+                                <span id="modal-volume-spec" class="text-xs font-cinzel font-bold text-charcoal">250ml UV-Obsidian</span>
+                            </div>
+                        </div>
+
+                        <!-- Ritual / Usage Note -->
+                        <div class="mb-6">
+                            <h4 class="font-cinzel text-xs font-bold tracking-widest uppercase text-charcoal mb-1">Recommended Ritual</h4>
+                            <p id="modal-ritual" class="text-xs text-charcoal/75 leading-relaxed font-serif italic">
+                                Drizzle over warm artisanal flatbreads, roasted root vegetables, or take one measured teaspoon at dawn.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Add to Cart Section -->
+                    <div class="pt-6 border-t border-charcoal/15">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <span class="text-[10px] font-cinzel tracking-widest text-charcoal/60 uppercase block">Allocation Investment</span>
+                                <div class="flex items-baseline space-x-2">
+                                    <span id="modal-price" class="font-cinzel font-bold text-3xl text-charcoal">$68.00</span>
+                                    <span id="modal-unit-note" class="text-xs text-charcoal/60 font-serif italic">/ 250ml vessel</span>
+                                </div>
+                            </div>
+
+                            <!-- Quantity Selector & Add to Cart Button -->
+                            <div class="flex items-center space-x-3">
+                                <div class="flex items-center border border-charcoal/30 bg-paperDark shadow-inner h-12">
+                                    <button type="button" onclick="adjustModalQty(-1)" class="w-10 h-full text-sm font-bold hover:bg-charcoal/10 transition-colors">-</button>
+                                    <span id="modal-qty" class="w-10 text-center font-cinzel font-bold text-sm">1</span>
+                                    <button type="button" onclick="adjustModalQty(1)" class="w-10 h-full text-sm font-bold hover:bg-charcoal/10 transition-colors">+</button>
+                                </div>
+
+                                <button type="button" id="modal-add-btn" onclick="addModalProductToCart()" class="h-12 px-6 bg-charcoal text-paper font-cinzel text-xs font-bold tracking-widest hover:bg-neutral-800 active:scale-95 transition-all flex items-center space-x-2.5 shadow-xl">
+                                    <img src="vatsom_logo.png" alt="" class="w-4 h-3.5 object-contain shrink-0">
+                                    <span>ADD TO CART</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-40 bg-charcoal/85 backdrop-blur-md border-b border-paper/10 transition-all duration-300" id="main-header">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <a href="#" data-scroll-to="top" class="flex items-center space-x-3.5 group">
+                <div class="origami-logo-wrap w-10 h-8 shrink-0 flex items-center justify-center">
+                    <img src="vatsom_logo.png" alt="Vatsom Origami V Logo" class="origami-logo-base">
+                    <img src="vatsom_logo.png" alt="" aria-hidden="true" class="origami-flap-left">
+                    <img src="vatsom_logo.png" alt="" aria-hidden="true" class="origami-flap-right">
+                </div>
+                <span class="font-cinzel text-2xl font-bold tracking-[0.22em] text-paper leading-none translate-y-[1px]">VATSOM</span>
+            </a>
+            
+            <nav class="hidden md:flex items-center space-x-8 font-sans text-xs tracking-[0.2em]">
+                <a href="#catalogue" class="nav-link text-paper/70 hover:text-accentGold transition-colors uppercase py-2">Catalogue</a>
+                <a href="#alchemy" class="nav-link text-paper/70 hover:text-accentGold transition-colors uppercase py-2">The Alchemy</a>
+                <a href="#philosophy" class="nav-link text-paper/70 hover:text-accentGold transition-colors uppercase py-2">Philosophy</a>
+                <a href="#contact" class="nav-link text-paper/70 hover:text-accentGold transition-colors uppercase py-2">Inquiries</a>
+            </nav>
+
+            <div class="flex items-center space-x-3">
+                <button id="patron-btn" onclick="openPatronModal('orders')" class="px-3.5 py-2 border border-paper/25 text-paper hover:border-accentGold hover:text-accentGold transition-all flex items-center space-x-2">
+                    <i class="fa-regular fa-user text-xs"></i>
+                    <span id="patron-btn-label" class="font-cinzel text-xs font-bold tracking-wider hidden sm:inline">PATRON SIGN IN</span>
+                </button>
+                <button id="cart-btn" class="relative px-4 py-2 ribbed-paper text-charcoal hover:bg-paperDark transition-all flex items-center space-x-2.5 shadow-md group">
+                    <i class="fa-solid fa-scroll text-xs text-charcoal group-hover:-rotate-12 transition-transform"></i>
+                    <span class="font-cinzel text-xs font-bold tracking-wider hidden sm:inline">SLIP</span>
+                    <span id="cart-count" class="bg-charcoal text-accentGold text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center shadow">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Patron Account, COD Dispatch & Order Tracking Modal (Tactile Parchment Folio) -->
+    <div id="patron-modal" data-lenis-prevent class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div onclick="closePatronModal()" class="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
+
+        <div id="patron-modal-box" class="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto ribbed-paper text-charcoal shadow-2xl border border-paperEdge transform scale-95 translate-y-4 transition-all duration-300">
+            <div class="sticky top-0 z-20 px-6 sm:px-8 py-5 bg-paperDark/90 backdrop-blur-sm border-b border-charcoal/15 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <img src="vatsom_logo.png" alt="" class="w-6 h-5 object-contain">
+                    <div>
+                        <h3 id="patron-modal-heading" class="font-cinzel text-lg sm:text-xl font-bold tracking-widest leading-none">PATRON LEDGER &amp; COD DISPATCH</h3>
+                        <span id="patron-modal-sub" class="text-[10px] font-cinzel tracking-[0.2em] text-charcoal/60 uppercase">Verified Identity &bull; Allocations &bull; Tracking</span>
+                    </div>
+                </div>
+                <button type="button" onclick="closePatronModal()" aria-label="Close patron modal" class="w-9 h-9 rounded-full bg-charcoal text-paper hover:text-accentGold flex items-center justify-center transition-colors shadow">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 sm:p-8 space-y-6">
+                <!-- Google Authentication Section (Shown when signed out) -->
+                <div id="patron-auth-panel" class="p-6 bg-paperDark/60 border border-charcoal/15 text-center space-y-4">
+                    <span class="text-[10px] font-cinzel tracking-[0.25em] uppercase text-accentGold font-bold block">GOOGLE IDENTITY VERIFICATION</span>
+                    <h4 class="font-cinzel text-xl font-bold text-charcoal">Sign In to Seal COD Allocations &amp; Track Dispatches</h4>
+                    <p class="text-xs text-charcoal/75 max-w-md mx-auto leading-relaxed">
+                        VATSOM uses verified Google accounts to protect your personal order ledger, saved Indian delivery addresses, and shipment tracking.
+                    </p>
+                    <div id="storefront-google-btn" class="flex justify-center min-h-[44px]"></div>
+                </div>
+
+                <!-- Authenticated Patron Navigation Tabs -->
+                <div id="patron-authenticated-panel" class="hidden space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-charcoal/15">
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="switchPatronTab('checkout')" id="ptab-checkout" class="px-4 py-2 bg-charcoal text-paper font-cinzel text-[11px] font-bold tracking-wider">
+                                1. COD DISPATCH
+                            </button>
+                            <button type="button" onclick="switchPatronTab('orders')" id="ptab-orders" class="px-4 py-2 bg-paperDark text-charcoal font-cinzel text-[11px] font-bold tracking-wider">
+                                2. ORDER HISTORY &amp; TRACKING
+                            </button>
+                            <button type="button" onclick="switchPatronTab('addresses')" id="ptab-addresses" class="px-4 py-2 bg-paperDark text-charcoal font-cinzel text-[11px] font-bold tracking-wider">
+                                3. SAVED ADDRESSES
+                            </button>
+                            <button type="button" onclick="switchPatronTab('preferences')" id="ptab-preferences" class="px-4 py-2 bg-paperDark text-charcoal font-cinzel text-[11px] font-bold tracking-wider">
+                                4. RETENTION PREFERENCES
+                            </button>
+                        </div>
+                        <button type="button" onclick="logoutPatron()" class="text-xs font-cinzel font-bold text-waxRed hover:underline tracking-wider">
+                            SIGN OUT
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: AUTHORITATIVE COD CHECKOUT FORM -->
+                    <form id="cod-checkout-form" onsubmit="submitAuthoritativeCodOrder(event)" class="space-y-5">
+                        <input type="text" name="_hp" id="cod-hp-field" class="hidden" tabindex="-1" autocomplete="off">
+                        <div class="p-4 bg-paperDark/65 border border-charcoal/15 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] font-cinzel tracking-widest uppercase text-charcoal/60 block">Payment Method</span>
+                                <span class="font-cinzel font-bold text-sm text-charcoal">CASH ON DELIVERY (COD) ONLY</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[10px] font-cinzel tracking-widest uppercase text-charcoal/60 block">Estimated Allocation</span>
+                                <span id="cod-modal-total" class="font-cinzel font-bold text-xl text-charcoal">$0.00</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">Use Saved Address (Optional)</label>
+                            <select id="cod-saved-address-select" onchange="applySavedAddressSelection(this.value)" class="w-full px-3 py-2.5 bg-paper border border-charcoal/25 font-cinzel text-xs text-charcoal">
+                                <option value="">-- Enter New Delivery Address Below --</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">Recipient Full Name *</label>
+                                <input type="text" id="cod-recipient-name" required minlength="2" maxlength="120" class="w-full px-3.5 py-2 bg-paper border border-charcoal/25 text-xs text-charcoal">
+                            </div>
+                            <div>
+                                <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">Indian Mobile Number (10 Digits) *</label>
+                                <input type="tel" id="cod-phone" required pattern="^(\+91)?[6-9][0-9]{9}$" placeholder="9876543210" class="w-full px-3.5 py-2 bg-paper border border-charcoal/25 text-xs text-charcoal">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">Address Line 1 (House / Street) *</label>
+                                <input type="text" id="cod-addr1" required minlength="3" maxlength="250" class="w-full px-3.5 py-2 bg-paper border border-charcoal/25 text-xs text-charcoal">
+                            </div>
+                            <div>
+                                <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">Address Line 2 / Landmark</label>
+                                <input type="text" id="cod-addr2" maxlength="250" class="w-full px-3.5 py-2 bg-paper border border-charcoal/25 text-xs text-charcoal">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">City *</label>
+                                <input type="text" id="cod-city" required minlength="2" maxlength="100" class="w-full px-3.5 py-2 bg-paper border border-charcoal/25 text-xs text-charcoal">
+                            </div>
+                            <div>
+                                <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">State *</label>
+                                <input type="text" id="cod-state" required minlength="2" maxlength="100" class="w-full px-3.5 py-2 bg-paper border border-charcoal/25 text-xs text-charcoal">
+                            </div>
+                            <div>
+                                <label class="block font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal/80 mb-1">PIN Code (6 Digits) *</label>
+                                <input type="text" id="cod-pincode" required pattern="^[1-9][0-9]{5}$" placeholder="110001" class="w-full px-3.5 py-2 bg-paper border border-charcoal/25 font-cinzel text-xs font-bold text-charcoal">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="cod-save-address" checked class="accent-charcoal">
+                            <label for="cod-save-address" class="text-xs text-charcoal/80">Save this address to my Patron Ledger for future allocations</label>
+                        </div>
+
+                        <!-- Explicit Unchecked Marketing Consent (Never pre-checked) -->
+                        <div class="p-4 bg-paperDark/50 border border-charcoal/15 space-y-2">
+                            <span class="font-cinzel text-[10px] font-bold tracking-widest uppercase text-charcoal block">Optional Atelier Dispatches (Unchecked by Default)</span>
+                            <div class="flex flex-wrap gap-4 text-xs text-charcoal/80">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="cod-opt-table" class="accent-charcoal">
+                                    <span>VATSOM TABLE (Culinary &amp; Edible)</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="cod-opt-atmosphere" class="accent-charcoal">
+                                    <span>VATSOM ATMOSPHERE (Aromatic)</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="cod-opt-collections" class="accent-charcoal">
+                                    <span>Seasonal Harvest Releases</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Cloudflare Turnstile Container -->
+                        <div id="checkout-turnstile-container" class="flex justify-center"></div>
+
+                        <div id="cod-checkout-error" class="hidden p-3 bg-waxRed/10 border border-waxRed text-waxRed text-xs font-semibold"></div>
+
+                        <div class="pt-3 border-t border-charcoal/20 flex justify-end gap-3">
+                            <button type="button" onclick="closePatronModal()" class="px-5 py-3 border border-charcoal/30 font-cinzel text-xs font-bold">CANCEL</button>
+                            <button type="submit" id="cod-submit-btn" class="px-8 py-3 bg-charcoal text-paper font-cinzel text-xs font-bold tracking-widest hover:bg-neutral-800 transition-all flex items-center space-x-2.5 shadow-xl">
+                                <img src="vatsom_logo.png" alt="" class="w-4 h-3.5 object-contain">
+                                <span>CONFIRM &amp; SEAL COD ORDER</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- TAB 2: PATRON ORDER HISTORY & TRACKING -->
+                    <div id="patron-orders-view" class="hidden space-y-4">
+                        <div id="patron-orders-list" class="space-y-4"></div>
+                    </div>
+
+                    <!-- TAB 3: SAVED ADDRESSES -->
+                    <div id="patron-addresses-view" class="hidden space-y-4">
+                        <div id="patron-addresses-list" class="space-y-3"></div>
+                    </div>
+
+                    <!-- TAB 4: MARKETING & RETENTION PREFERENCES -->
+                    <form id="patron-prefs-view" onsubmit="savePatronPreferences(event)" class="hidden space-y-4">
+                        <p class="text-xs text-charcoal/75">
+                            Manage your explicit communication preferences across VATSOM divisions. Transactional order &amp; dispatch receipts are always delivered.
+                        </p>
+                        <div class="space-y-2.5 p-4 bg-paperDark/60 border border-charcoal/15 text-xs">
+                            <label class="flex items-center space-x-2.5">
+                                <input type="checkbox" id="pref-table" class="accent-charcoal">
+                                <span class="font-semibold">VATSOM TABLE — Culinary &amp; Cold-Pressed Edible Oils</span>
+                            </label>
+                            <label class="flex items-center space-x-2.5">
+                                <input type="checkbox" id="pref-atmosphere" class="accent-charcoal">
+                                <span class="font-semibold">VATSOM ATMOSPHERE — Rare Aromatic Distillations</span>
+                            </label>
+                            <label class="flex items-center space-x-2.5">
+                                <input type="checkbox" id="pref-collections" class="accent-charcoal">
+                                <span>New Seasonal Harvests &amp; Limited Allocations</span>
+                            </label>
+                            <label class="flex items-center space-x-2.5">
+                                <input type="checkbox" id="pref-updates" class="accent-charcoal">
+                                <span>Botanical Education &amp; Replenishment Reminders</span>
+                            </label>
+                            <label class="flex items-center space-x-2.5">
+                                <input type="checkbox" id="pref-promos" class="accent-charcoal">
+                                <span>Private Atelier Invitations &amp; Campaigns</span>
+                            </label>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-6 py-2.5 bg-charcoal text-paper font-cinzel text-xs font-bold tracking-widest">
+                                SAVE PREFERENCES
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-[92vh] flex items-center justify-center px-6 py-20 overflow-hidden">
+        <!-- Subtle Giant Origami V Watermark in Background -->
+        <div id="hero-bg-triangle" class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.04] transition-transform duration-75">
+            <img src="vatsom_logo.png" alt="" aria-hidden="true" class="w-[680px] max-w-[90vw] object-contain select-none">
+        </div>
+
+        <div class="max-w-5xl mx-auto text-center relative z-10">
+            <!-- Interactive 3D Origami V Centerpiece -->
+            <div class="paper-unfold mb-6 flex justify-center">
+                <div class="origami-logo-wrap w-28 h-24 md:w-36 md:h-28" title="Hover or click to flex the origami parchment folds">
+                    <img src="vatsom_logo.png" alt="Vatsom Origami Emblem" class="origami-logo-base">
+                    <img src="vatsom_logo.png" alt="" aria-hidden="true" class="origami-flap-left">
+                    <img src="vatsom_logo.png" alt="" aria-hidden="true" class="origami-flap-right">
+                </div>
+            </div>
+
+            <!-- Unfolding Parchment Banner (Generous inset padding so text never touches angled edges) -->
+            <div id="site-hero-banner" class="paper-unfold inline-block mb-7 px-10 sm:px-14 py-2.5 ribbed-paper text-charcoal font-cinzel text-[10px] sm:text-[11px] font-semibold tracking-[0.26em] uppercase clip-triangle-hero shadow-lg">
+                Purified Botanical &amp; Culinary Extracts
+            </div>
+            
+            <h1 id="site-hero-title" class="paper-unfold font-cinzel text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-8 text-paper leading-none" style="transition-delay: 100ms;">
+                SACRED <span class="italic font-serif font-light text-accentGold">OILS</span> OF DISTINCTION
+            </h1>
+            
+            <p id="site-hero-subtitle" class="paper-unfold font-sans text-paper/70 text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed mb-12" style="transition-delay: 200ms;">
+                Hand-harvested edible elixirs and rare aromatic essences. Pressed in nocturnal silence, inscribed on ribbed parchment, and sealed in obsidian glass.
+            </p>
+
+            <div class="paper-unfold flex flex-col sm:flex-row items-center justify-center gap-5" style="transition-delay: 300ms;">
+                <a href="#catalogue" class="w-full sm:w-auto px-9 py-4 ribbed-paper text-charcoal font-cinzel font-bold tracking-widest hover:bg-paperDark hover:-translate-y-0.5 transition-all flex items-center justify-center space-x-3 shadow-2xl">
+                    <span>UNROLL CATALOGUE</span>
+                    <i class="fa-solid fa-arrow-down text-xs animate-bounce"></i>
+                </a>
+                <a href="#alchemy" class="w-full sm:w-auto px-9 py-4 border border-paper/30 text-paper font-cinzel font-bold tracking-widest hover:bg-paper/10 transition-all text-center">
+                    THE ALCHEMY SCROLL
+                </a>
+            </div>
+
+            <!-- Square Feature Boxes with Paper Stack & Smooth Tilt -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20 text-left">
+                <div class="paper-unfold paper-stack paper-card ribbed-paper text-charcoal p-8 relative shadow-xl border-t-2 border-accentGold" data-delay="100">
+                    <div class="paper-sheen"></div>
+                    <div class="paper-corner-curl"></div>
+                    <div class="font-cinzel font-bold text-accentGold text-xs mb-2 tracking-widest">01 / COLD PRESSED</div>
+                    <h3 class="font-cinzel font-bold text-lg mb-2">Zero Thermal Loss</h3>
+                    <p class="text-xs text-charcoal/80 leading-relaxed">Extracted strictly below 27°C to preserve volatile antioxidants and native molecular integrity.</p>
+                </div>
+                <div class="paper-unfold paper-stack paper-card ribbed-paper text-charcoal p-8 relative shadow-xl border-t-2 border-accentGold" data-delay="200">
+                    <div class="paper-sheen"></div>
+                    <div class="paper-corner-curl"></div>
+                    <div class="font-cinzel font-bold text-accentGold text-xs mb-2 tracking-widest">02 / SINGLE ORIGIN</div>
+                    <h3 class="font-cinzel font-bold text-lg mb-2">Untamed Terroir</h3>
+                    <p class="text-xs text-charcoal/80 leading-relaxed">Sourced from untouched micro-climates across Tuscan hills, Himalayan peaks, and Moroccan groves.</p>
+                </div>
+                <div class="paper-unfold paper-stack paper-card ribbed-paper text-charcoal p-8 relative shadow-xl border-t-2 border-accentGold" data-delay="300">
+                    <div class="paper-sheen"></div>
+                    <div class="paper-corner-curl"></div>
+                    <div class="font-cinzel font-bold text-accentGold text-xs mb-2 tracking-widest">03 / ULTRA-DARK GLASS</div>
+                    <h3 class="font-cinzel font-bold text-lg mb-2">Photon Shielding</h3>
+                    <p class="text-xs text-charcoal/80 leading-relaxed">Encased in bespoke UV-resistant obsidian vessels to prevent photo-oxidation of delicate terpenes.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Product Catalogue Section -->
+    <section id="catalogue" class="py-24 px-6 bg-charcoal relative">
+        <div class="max-w-7xl mx-auto">
+            <div class="paper-unfold text-center mb-10">
+                <span class="text-accentGold font-cinzel text-xs tracking-[0.3em] uppercase block mb-3">THE VAULT OF ELIXIRS</span>
+                <h2 class="font-cinzel text-4xl md:text-5xl font-bold text-paper">EDIBLE &amp; AROMATIC CATALOGUE</h2>
+                <div class="w-24 h-0.5 bg-accentGold mx-auto mt-6"></div>
+            </div>
+
+            <!-- Demo Catalogue & Site Testing Notice Banner -->
+            <div id="demo-catalogue-banner" class="paper-unfold max-w-3xl mx-auto mb-10 ribbed-paper text-charcoal px-6 py-4 shadow-xl border-l-4 border-accentGold flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                <div class="flex items-center space-x-3.5">
+                    <span class="px-2.5 py-1 bg-charcoal text-accentGold font-cinzel text-[10px] font-bold tracking-widest uppercase shrink-0">DEMO CATALOGUE</span>
+                    <p class="text-xs font-serif italic text-charcoal/85">
+                        We are currently testing the platform — the folios below are demonstration entries while our official commercial catalogue is under final processing.
+                    </p>
+                </div>
+                <span class="font-cinzel text-[10px] font-bold tracking-widest text-charcoal/60 uppercase shrink-0">PREVIEW MODE</span>
+            </div>
+
+            <!-- Interactive Paper Tab Filter -->
+            <div class="paper-unfold flex flex-wrap items-center justify-center gap-3 mb-14">
+                <button onclick="filterProducts('all')" data-filter="all" class="filter-tab ribbed-paper text-charcoal px-6 py-2.5 font-cinzel text-xs font-bold tracking-widest shadow-lg transition-all -translate-y-1">
+                    ALL FOLIOS (6)
+                </button>
+                <button onclick="filterProducts('Edible')" data-filter="Edible" class="filter-tab bg-paper/10 text-paper hover:bg-paper/20 px-6 py-2.5 font-cinzel text-xs font-bold tracking-widest transition-all">
+                    CULINARY &amp; EDIBLE
+                </button>
+                <button onclick="filterProducts('Aromatic')" data-filter="Aromatic" class="filter-tab bg-paper/10 text-paper hover:bg-paper/20 px-6 py-2.5 font-cinzel text-xs font-bold tracking-widest transition-all">
+                    AROMATIC ESSENCES
+                </button>
+            </div>
+
+            <!-- Product Grid -->
+            <div id="product-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <!-- Populated via JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- NEW: The Alchemy Unrolling Parchment Scroll Section -->
+    <section id="alchemy" class="py-24 px-6 relative overflow-hidden bg-neutral-950/80 border-y border-paper/10">
+        <div class="max-w-4xl mx-auto">
+            <div class="paper-unfold text-center mb-14">
+                <span class="text-accentGold font-cinzel text-xs tracking-[0.3em] uppercase block mb-3">CODEX OF EXTRACTION</span>
+                <h2 class="font-cinzel text-3xl md:text-5xl font-bold text-paper">THE ALCHEMY SCROLL</h2>
+                <p class="text-paper/60 text-sm mt-3 max-w-xl mx-auto font-light">
+                    Each harvest is documented on laid cotton paper and follows three unhurried acts of botanical purification.
+                </p>
+            </div>
+
+            <!-- Physical Scroll Container with Top & Bottom Rollers -->
+            <div class="paper-unfold relative mx-auto max-w-3xl">
+                <!-- Top Wooden/Brass Roller -->
+                <div class="parchment-roller z-20"></div>
+
+                <!-- Unrolling Parchment Body -->
+                <div class="ribbed-paper text-charcoal px-8 md:px-14 py-12 shadow-2xl relative divide-y divide-charcoal/15">
+                    <!-- Act I -->
+                    <div class="py-6 first:pt-0 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div class="flex items-start space-x-5">
+                            <span class="font-cinzel text-3xl font-extrabold text-accentGold leading-none">01</span>
+                            <div>
+                                <span class="text-[11px] font-cinzel tracking-[0.25em] uppercase text-charcoal/60 block">Nocturnal Foraging</span>
+                                <h3 class="font-cinzel text-xl font-bold mt-1">Dew-Point Botanical Harvest</h3>
+                                <p class="text-xs text-charcoal/80 leading-relaxed mt-2 max-w-lg">
+                                    Seeds, blossoms, and drupes are gathered before dawn when essential oil density peaks within the plant cell walls.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="shrink-0 text-right font-serif italic text-xs text-charcoal/70 border-l md:border-l border-charcoal/20 pl-4">
+                            Temp: 14°C – 18°C<br>Humidity: 72%
+                        </div>
+                    </div>
+
+                    <!-- Act II -->
+                    <div class="py-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div class="flex items-start space-x-5">
+                            <span class="font-cinzel text-3xl font-extrabold text-accentGold leading-none">02</span>
+                            <div>
+                                <span class="text-[11px] font-cinzel tracking-[0.25em] uppercase text-charcoal/60 block">Granite Mill &amp; Cold Expeller</span>
+                                <h3 class="font-cinzel text-xl font-bold mt-1">First-Press Unfiltered Run</h3>
+                                <p class="text-xs text-charcoal/80 leading-relaxed mt-2 max-w-lg">
+                                    Slow mechanical compression at 18 RPM yields a dense, emerald-gold nectar without solvent or steam degradation.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="shrink-0 text-right font-serif italic text-xs text-charcoal/70 border-l border-charcoal/20 pl-4">
+                            Max Thermal: &lt; 27°C<br>Yield: 14% Pure
+                        </div>
+                    </div>
+
+                    <!-- Act III -->
+                    <div class="py-6 last:pb-0 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div class="flex items-start space-x-5">
+                            <span class="font-cinzel text-3xl font-extrabold text-accentGold leading-none">03</span>
+                            <div>
+                                <span class="text-[11px] font-cinzel tracking-[0.25em] uppercase text-charcoal/60 block">Parchment Filtration &amp; Curing</span>
+                                <h3 class="font-cinzel text-xl font-bold mt-1">Gravity Decanting &amp; Hand-Numbered Seal</h3>
+                                <p class="text-xs text-charcoal/80 leading-relaxed mt-2 max-w-lg">
+                                    Rested in subterranean amphorae for 21 days before being wrapped in ribbed archival paper and stamped in crimson wax.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="shrink-0 text-right font-serif italic text-xs text-charcoal/70 border-l border-charcoal/20 pl-4">
+                            Rest: 504 Hours<br>Vessel: UV-Obsidian
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Wooden/Brass Roller -->
+                <div class="parchment-roller z-20"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Philosophy / About Section -->
+    <section id="philosophy" class="py-24 px-6 relative overflow-hidden bg-gradient-to-b from-charcoal to-neutral-950">
+        <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+            <!-- Stacked Multi-Sheet Manifesto Card -->
+            <div class="paper-unfold paper-stack paper-card ribbed-paper text-charcoal p-8 md:p-12 shadow-2xl relative">
+                <div class="paper-sheen"></div>
+                <div class="paper-corner-curl"></div>
+                <div class="absolute -top-5 -right-5 w-16 h-14 bg-charcoal p-2.5 shadow-xl border border-accentGold/40 flex items-center justify-center">
+                    <img src="vatsom_logo.png" alt="Vatsom Emblem" class="w-full h-full object-contain">
+                </div>
+                <span class="text-accentGold font-cinzel text-xs tracking-[0.2em] uppercase font-bold block mb-2">THE VATSOM MANIFESTO</span>
+                <h3 id="site-manifesto-title" class="font-cinzel text-3xl font-bold mb-6 leading-tight">Where Ancient Extraction Meets Modern Precision</h3>
+                <p id="site-manifesto-p1" class="text-sm text-charcoal/80 leading-relaxed mb-6 font-sans">
+                    Vatsom was born from an obsession with purity. In an era of mass-industrialized refining, our laboratory-studios adhere strictly to ancestral stone-grinding and pristine cold-expeller techniques. 
+                </p>
+                <p id="site-manifesto-p2" class="text-sm text-charcoal/80 leading-relaxed font-sans mb-6">
+                    Every drop of our culinary or aromatic essence tells a silent story of soil, rain, and careful hand-harvesting.
+                </p>
+                <div class="pt-4 border-t border-charcoal/15 flex items-center justify-between text-xs font-serif italic text-charcoal/70">
+                    <span>Inscribed at the Vatsom Atelier</span>
+                    <span class="font-cinzel not-italic font-bold text-charcoal tracking-widest">BATCH NO. IV-2026</span>
+                </div>
+            </div>
+            
+            <div class="space-y-8">
+                <div class="paper-unfold flex items-start space-x-5">
+                    <div class="w-12 h-12 shrink-0 ribbed-paper clip-triangle flex items-center justify-center text-charcoal font-cinzel font-bold shadow-md">I</div>
+                    <div>
+                        <h4 class="font-cinzel font-bold text-paper text-lg mb-1">Edible Perfection</h4>
+                        <p class="text-paper/60 text-sm leading-relaxed">Finishing oils designed to elevate raw dishes, salads, and slow-roasted gastronomy with intense unadulterated flavor notes.</p>
+                    </div>
+                </div>
+                <div class="paper-unfold flex items-start space-x-5" style="transition-delay: 120ms;">
+                    <div class="w-12 h-12 shrink-0 ribbed-paper clip-triangle flex items-center justify-center text-charcoal font-cinzel font-bold shadow-md">II</div>
+                    <div>
+                        <h4 class="font-cinzel font-bold text-paper text-lg mb-1">Aromatic Transcendence</h4>
+                        <p class="text-paper/60 text-sm leading-relaxed">Therapeutic-grade aromatic oils distilled in micro-batches to calm the nervous system and elevate spaces with rare botanical scents.</p>
+                    </div>
+                </div>
+                <div class="paper-unfold flex items-start space-x-5" style="transition-delay: 240ms;">
+                    <div class="w-12 h-12 shrink-0 ribbed-paper clip-triangle flex items-center justify-center text-charcoal font-cinzel font-bold shadow-md">III</div>
+                    <div>
+                        <h4 class="font-cinzel font-bold text-paper text-lg mb-1">The Tactile Paper Seal</h4>
+                        <p class="text-paper/60 text-sm leading-relaxed">Packaged in recyclable ribbed cotton parchment and raw botanical fibers, respecting both the earth and the precious fluid inside.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="bg-charcoal border-t border-paper/10 py-16 px-6">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+            <div class="md:col-span-2">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="origami-logo-wrap w-9 h-7 shrink-0">
+                        <img src="vatsom_logo.png" alt="Vatsom Origami V Logo" class="origami-logo-base">
+                        <img src="vatsom_logo.png" alt="" aria-hidden="true" class="origami-flap-left">
+                        <img src="vatsom_logo.png" alt="" aria-hidden="true" class="origami-flap-right">
+                    </div>
+                    <span class="font-cinzel text-xl font-bold tracking-widest text-paper">VATSOM</span>
+                </div>
+                <p class="text-paper/60 text-sm max-w-sm mb-6 font-light">
+                    Purveyors of rare, cold-pressed edible elixirs and profound aromatic extractions. Handcrafted in limited seasonal quantities.
+                </p>
+                <div class="flex space-x-4">
+                    <a href="#" class="w-10 h-10 rounded-full border border-paper/20 flex items-center justify-center text-paper hover:bg-paper hover:text-charcoal transition-all"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" class="w-10 h-10 rounded-full border border-paper/20 flex items-center justify-center text-paper hover:bg-paper hover:text-charcoal transition-all"><i class="fa-brands fa-pinterest"></i></a>
+                    <a href="#" class="w-10 h-10 rounded-full border border-paper/20 flex items-center justify-center text-paper hover:bg-paper hover:text-charcoal transition-all"><i class="fa-brands fa-x-twitter"></i></a>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="font-cinzel font-bold text-paper tracking-wider mb-4">CATALOGUE</h4>
+                <ul class="space-y-2 text-sm text-paper/70 font-light">
+                    <li><a href="#catalogue" onclick="filterProducts('Edible')" class="hover:text-accentGold transition-colors">Edible Infusions</a></li>
+                    <li><a href="#catalogue" onclick="filterProducts('Aromatic')" class="hover:text-accentGold transition-colors">Aromatic Essences</a></li>
+                    <li><a href="#catalogue" onclick="filterProducts('all')" class="hover:text-accentGold transition-colors">Cold-Pressed Reserves</a></li>
+                    <li><a href="#alchemy" class="hover:text-accentGold transition-colors">The Alchemy Scroll</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="font-cinzel font-bold text-paper tracking-wider mb-4">CONCIERGE</h4>
+                <ul class="space-y-2 text-sm text-paper/70 font-light">
+                    <li><a href="#catalogue" class="hover:text-accentGold transition-colors">Private Allocation</a></li>
+                    <li><a href="#alchemy" class="hover:text-accentGold transition-colors">Botanical Purity Reports</a></li>
+                    <li><a href="#philosophy" class="hover:text-accentGold transition-colors">Wholesale &amp; Gastronomy</a></li>
+                    <li><a href="#contact" class="hover:text-accentGold transition-colors">Inquiries &amp; Support</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto pt-8 border-t border-paper/10 flex flex-col sm:flex-row items-center justify-between text-xs text-paper/50">
+            <p>&copy; 2026 VATSOM Oils. All rights reserved. Handcrafted with precision.</p>
+            <div class="flex space-x-6 mt-4 sm:mt-0">
+                <a href="#" class="hover:text-paper transition-colors">Privacy Policy</a>
+                <a href="#" class="hover:text-paper transition-colors">Terms of Elixir</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Application Script -->
+    <script>
+        // Product Catalogue Data (Add image URLs into `images: []` whenever ready)
+        const products = [
+            {
+                id: 1,
+                name: "Cold-Pressed Black Seed Oil",
+                category: "Edible & Therapeutic",
+                filterTag: "Edible",
+                price: 68.00,
+                volume: "250ml",
+                notes: "Nigella Sativa | Pungent, Spicy, Deep Herbal",
+                description: "Sourced from pristine Egyptian fields, mechanically expressed without heat to safeguard high thymoquinone concentration.",
+                longDescription: "Harvested at dawn from mineral-rich alluvial soils in the Faiyum Oasis, our Nigella Sativa seeds are single-pressed in small granite batches below 27°C. Unfiltered and deeply aromatic, this obsidian-hued elixir preserves over 2.4% native thymoquinone and volatile essential lipids.",
+                origin: "Faiyum Oasis, Egypt",
+                extraction: "Raw Granite Cold-Press",
+                ritual: "Drizzle over warm artisanal flatbreads, charred root vegetables, or take one measured teaspoon neat at dawn.",
+                badge: "Bestseller",
+                images: []
+            },
+            {
+                id: 2,
+                name: "Wild Forest Oregano Aromatic Oil",
+                category: "Aromatic Essence",
+                filterTag: "Aromatic",
+                price: 85.00,
+                volume: "100ml",
+                notes: "Origanum Vulgare | Herbaceous, Warm, Camphorous",
+                description: "Wild-foraged from high-altitude Balkan cliffs. Possesses a deeply grounding and clarifying aromatic profile.",
+                longDescription: "Hand-gathered above 1,600 meters from sun-drenched limestone ridges, this wild mountain oregano undergoes slow copper-alembic hydro-distillation. Rich in carvacrol and wild forest terpenes, it clears the atmosphere and anchors meditative spaces.",
+                origin: "Dinaric Alps, Balkans",
+                extraction: "Copper-Alembic Distillation",
+                ritual: "Add 3–4 drops to a ceramic stone diffuser, or dilute in carrier oil for a warming chest and temple compress.",
+                badge: "Rare Harvest",
+                images: []
+            },
+            {
+                id: 3,
+                name: "Tuscan White Truffle Infused Olive Oil",
+                category: "Gastronomic Edible",
+                filterTag: "Edible",
+                price: 120.00,
+                volume: "200ml",
+                notes: "Tuber Magnatum | Earthy, Musky, Luxurious",
+                description: "Freshly shaved white truffles macerated in early-harvest organic extra virgin olive oil from San Miniato.",
+                longDescription: "Foraged beneath ancient oak and hazelnut roots in San Miniato, real Alba & Tuscan white truffles are cold-macerated directly into first-day Moraiolo extra virgin olive oil. Free of synthetic aromas, delivering an unmistakable, hauntingly earthy finish.",
+                origin: "San Miniato, Tuscany",
+                extraction: "Cold Botanical Maceration",
+                ritual: "Anoint handmade tagliolini, aged Parmigiano-Reggiano risottos, or poached farm eggs immediately before serving.",
+                badge: "Chef's Choice",
+                images: []
+            },
+            {
+                id: 4,
+                name: "Moroccan Argan Culinary & Skin Oil",
+                category: "Dual-Purpose Elixir",
+                filterTag: "Edible",
+                price: 95.00,
+                volume: "250ml",
+                notes: "Argania Spinosa | Roasted Nut, Warm Amber",
+                description: "Hand-cracked by women's cooperatives in the Sous Valley. Lightly toasted for complex culinary finishing or deep nourishment.",
+                longDescription: "Collected from UNESCO-protected biosphere argan forests, each nut is cracked between two river stones by master artisans. Gently rested to develop a silk-textured, golden hazelnut bouquet brimming with tocopherols and squalene.",
+                origin: "Sous Valley, Morocco",
+                extraction: "Artisanal Stone-Cracked Press",
+                ritual: "Finish grilled sea bass and couscous, or warm two drops between palms to seal moisture into damp skin.",
+                badge: "Organic",
+                images: []
+            },
+            {
+                id: 5,
+                name: "Himalayan Rhododendron Aromatic Oil",
+                category: "Aromatic Essence",
+                filterTag: "Aromatic",
+                price: 110.00,
+                volume: "100ml",
+                notes: "Rhododendron Arboreum | Floral, Sweet, Resinous",
+                description: "Distilled from crimson blossoms gathered in restricted high-altitude Himalayan wildlife sanctuaries.",
+                longDescription: "During the brief spring thaw at 3,200 meters, fallen rhododendron petals are collected by local mountain stewards and steam-distilled using glacial spring water. Opens with crisp alpine nectar before settling into a balsamic cedarwood undertone.",
+                origin: "Langtang Valley, Himalayas",
+                extraction: "Glacial Spring Hydro-Distillation",
+                ritual: "Diffuse during evening wind-down or anoint pulse points for a serene, high-altitude botanical sanctuary.",
+                badge: "Limited Batch",
+                images: []
+            },
+            {
+                id: 6,
+                name: "Sicilian Lemon Zest Infused Oil",
+                category: "Gastronomic Edible",
+                filterTag: "Edible",
+                price: 60.00,
+                volume: "250ml",
+                notes: "Citrus Limon | Vibrant, Zesty, Bright Zest",
+                description: "Cold-pressed simultaneously with organic Syracuse lemon peels to capture immediate, electric citrus notes.",
+                longDescription: "Using the traditional 'Olio Agrumato' method, whole organic Femminello Siracusano lemons are crushed together with green Nocellara del Belice olives in the same granite mill, locking volatile citrus essential oils directly into the golden lipid matrix.",
+                origin: "Syracuse, Sicily",
+                extraction: "Simultaneous Granite Agrumato",
+                ritual: "Drizzle over crudo, burrata, steamed asparagus, or substitute into olive-oil citrus cakes.",
+                badge: "Seasonal",
+                images: []
+            }
+        ];
+
+        // Shopping Cart & Modal State
+        let cart = [];
+        let activeFilter = 'all';
+        let activeModalProduct = null;
+        let activeModalQty = 1;
+        let activeModalPlate = 0;
+
+        // DOM Elements
+        const productGrid = document.getElementById('product-grid');
+        const cartBtn = document.getElementById('cart-btn');
+        const closeCart = document.getElementById('close-cart');
+        const cartDrawer = document.getElementById('cart-drawer');
+        const cartOverlay = document.getElementById('cart-overlay');
+        const cartItemsContainer = document.getElementById('cart-items');
+        const cartCount = document.getElementById('cart-count');
+        const cartSubtotal = document.getElementById('cart-subtotal');
+        const cartTotal = document.getElementById('cart-total');
+        const toast = document.getElementById('toast');
+        const toastTitle = document.getElementById('toast-title');
+        const toastDesc = document.getElementById('toast-desc');
+        const waxSealBadge = document.getElementById('wax-seal-badge');
+
+        // Initialize Lenis Smooth Scroll
+        let lenis;
+        if (typeof Lenis !== 'undefined') {
+            lenis = new Lenis({
+                duration: 1.25,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                smoothWheel: true,
+                wheelMultiplier: 0.95,
+                touchMultiplier: 1.5
+            });
+
+            lenis.on('scroll', ({ scroll, limit, velocity }) => {
+                // Update scroll progress ribbon
+                const progress = limit > 0 ? scroll / limit : 0;
+                const ribbon = document.getElementById('scroll-ribbon');
+                if (ribbon) {
+                    ribbon.style.transform = `scaleY(${progress})`;
+                }
+
+                // Subtle velocity-driven paper bend
+                const clampedVel = Math.max(-4, Math.min(4, velocity * 0.45));
+                document.documentElement.style.setProperty('--scroll-vel', clampedVel.toFixed(2));
+
+                // Parallax background paper shards
+                document.querySelectorAll('.parallax-shard').forEach(shard => {
+                    const speed = parseFloat(shard.dataset.speed || 0.2);
+                    shard.style.transform = `translate3d(0, ${scroll * speed}px, 0)`;
+                });
+
+                // Hero background geometric slow rotation
+                const heroTriangle = document.getElementById('hero-bg-triangle');
+                if (heroTriangle && scroll < 1200) {
+                    heroTriangle.style.transform = `translateY(${scroll * 0.18}px) rotate(${scroll * 0.03}deg)`;
+                }
+            });
+
+            function raf(time) {
+                lenis.raf(time);
+                requestAnimationFrame(raf);
+            }
+            requestAnimationFrame(raf);
+        }
+
+        // Smooth Anchor Links with Lenis
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') {
+                    e.preventDefault();
+                    if (lenis) lenis.scrollTo(0);
+                    else window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+                const targetEl = document.querySelector(targetId);
+                if (targetEl) {
+                    e.preventDefault();
+                    if (lenis) {
+                        lenis.scrollTo(targetEl, { offset: -70 });
+                    } else {
+                        targetEl.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+            });
+        });
+
+        // IntersectionObserver for 3D Paper Unfold Reveals
+        const unfoldObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    const delay = parseInt(el.dataset.delay || '0', 10);
+                    if (delay > 0) {
+                        el.style.transitionDelay = `${delay}ms`;
+                    }
+                    el.classList.add('is-visible');
+                    // Clear transition-delay after reveal finishes so hover animations have zero lag
+                    setTimeout(() => {
+                        el.style.transitionDelay = '0ms';
+                    }, delay + 750);
+                    unfoldObserver.unobserve(el);
+                }
+            });
+        }, {
+            threshold: 0.12,
+            rootMargin: '0px 0px -40px 0px'
+        });
+
+        function observePaperElements() {
+            document.querySelectorAll('.paper-unfold:not(.is-visible)').forEach(el => {
+                unfoldObserver.observe(el);
+            });
+        }
+
+        // Attach 3D Tactile Paper Tilt & Lighting Sheen to Cards (Zero-lag 60fps)
+        function bindPaperCardPhysics() {
+            document.querySelectorAll('.paper-card').forEach(card => {
+                if (card.dataset.tiltBound === 'true') return;
+                card.dataset.tiltBound = 'true';
+
+                let rafId = null;
+
+                card.addEventListener('mouseenter', () => {
+                    card.style.transitionDelay = '0ms';
+                    card.classList.add('is-hovering');
+                });
+
+                card.addEventListener('mousemove', (e) => {
+                    if (rafId) cancelAnimationFrame(rafId);
+                    rafId = requestAnimationFrame(() => {
+                        const rect = card.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        const centerX = rect.width / 2;
+                        const centerY = rect.height / 2;
+
+                        // Subtle paper flex angles
+                        const rotateX = ((y - centerY) / centerY) * -4.5;
+                        const rotateY = ((x - centerX) / centerX) * 4.5;
+
+                        card.style.setProperty('--mouse-x', `${x}px`);
+                        card.style.setProperty('--mouse-y', `${y}px`);
+                        card.style.transform = `perspective(1200px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-6px)`;
+                    });
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    if (rafId) cancelAnimationFrame(rafId);
+                    card.classList.remove('is-hovering');
+                    card.style.transform = '';
+                });
+            });
+        }
+
+        // Filter Products with Paper Flip Transition
+        function filterProducts(tag) {
+            activeFilter = tag;
+            document.querySelectorAll('.filter-tab').forEach(btn => {
+                if (btn.dataset.filter === tag) {
+                    btn.className = 'filter-tab ribbed-paper text-charcoal px-6 py-2.5 font-cinzel text-xs font-bold tracking-widest shadow-lg transition-all -translate-y-1';
+                } else {
+                    btn.className = 'filter-tab bg-paper/10 text-paper hover:bg-paper/20 px-6 py-2.5 font-cinzel text-xs font-bold tracking-widest transition-all';
+                }
+            });
+            renderProducts();
+        }
+
+        // Validate Product / Cart Identifier (Strictly rejects negative IDs, 0, NaN, null, undefined)
+        function isValidProductIdentifier(id) {
+            if (id === null || id === undefined || id === '') return false;
+            if (typeof id === 'number') {
+                return Number.isInteger(id) && id > 0;
+            }
+            const str = String(id).trim();
+            if (!str || str.startsWith('-')) return false;
+            if (/^\d+$/.test(str)) {
+                return Number(str) > 0;
+            }
+            return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+        }
+
+        function escapeAttrClient(val) {
+            return String(val ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        // Render Products (Clicking anywhere on a product box opens its detailed Pop-up Folio; clicking ADD TO CART adds directly)
+        function renderProducts() {
+            const allCountBtn = document.querySelector('.filter-tab[data-filter="all"]');
+            if (allCountBtn) {
+                allCountBtn.textContent = `ALL FOLIOS (${products.length})`;
+            }
+
+            const filtered = activeFilter === 'all'
+                ? products
+                : products.filter(p => p.filterTag === activeFilter);
+
+            if (filtered.length === 0) {
+                productGrid.innerHTML = `
+                <div class="col-span-full paper-unfold is-visible paper-stack ribbed-paper text-charcoal p-12 text-center shadow-2xl">
+                    <span class="text-xs uppercase font-cinzel text-accentGold font-bold tracking-widest block mb-2">Atelier Vault</span>
+                    <h3 class="font-cinzel text-2xl font-bold mb-2">Catalogue Allocations Under Verification</h3>
+                    <p class="text-xs font-serif italic text-charcoal/75 max-w-md mx-auto">Current cold-pressed harvest lots are undergoing laboratory, origin, and pricing verification before commercial publication.</p>
+                </div>`;
+                return;
+            }
+
+            productGrid.innerHTML = filtered.map((product, index) => {
+                const safeId = escapeAttrClient(product.id);
+                return `
+                <div onclick="openProductModal('${safeId}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openProductModal('${safeId}');}" class="paper-unfold paper-stack paper-card ribbed-paper text-charcoal p-8 relative flex flex-col justify-between shadow-2xl group cursor-pointer" data-delay="${index * 70}">
+                    <div class="paper-sheen"></div>
+                    <div class="paper-corner-curl"></div>
+
+                    <!-- Geometric Badge -->
+                    <div class="absolute top-0 right-0 bg-charcoal text-paper px-4 py-1.5 text-xs font-cinzel tracking-widest clip-card-badge z-10">
+                        ${product.badge}
+                    </div>
+
+                    <div class="relative z-10">
+                        <span class="text-xs uppercase font-cinzel text-accentGold font-bold tracking-widest block mb-2">${product.category}</span>
+                        <h3 class="font-cinzel text-2xl font-bold mb-2 group-hover:text-accentGold transition-colors">${product.name}</h3>
+                        <div class="text-xs font-serif italic text-charcoal/75 mb-4 tracking-wide border-l-2 border-accentGold pl-3">${product.notes}</div>
+                        <p class="text-xs text-charcoal/80 leading-relaxed mb-6">${product.description}</p>
+                    </div>
+
+                    <div class="pt-6 border-t border-charcoal/15 flex items-center justify-between mt-4 relative z-10">
+                        <div>
+                            <span class="text-[11px] font-cinzel tracking-wider text-charcoal/60 block">VESSEL: ${product.volume}</span>
+                            <span class="font-cinzel font-bold text-2xl">$${Number(product.price).toFixed(2)}</span>
+                        </div>
+                        <button type="button" onclick="event.stopPropagation(); addToCart('${safeId}');" class="bg-charcoal text-paper px-5 py-3 font-cinzel text-xs font-bold tracking-widest hover:bg-neutral-800 active:scale-95 transition-all flex items-center space-x-2.5 shadow-md">
+                            <img src="vatsom_logo.png" alt="" class="w-4 h-3.5 object-contain shrink-0">
+                            <span>ADD TO CART</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+
+            observePaperElements();
+            bindPaperCardPhysics();
+        }
+
+        // Open Product Detail Pop-Up Modal
+        function openProductModal(productId) {
+            if (!isValidProductIdentifier(productId)) return;
+            const product = products.find(p => String(p.id) === String(productId) || String(p.uuid) === String(productId));
+            if (!product) return;
+
+            activeModalProduct = product;
+            activeModalQty = 1;
+            activeModalPlate = 0;
+
+            document.getElementById('modal-badge').textContent = product.badge;
+            const folioNum = product.legacyId || (typeof product.id === 'number' ? product.id : 1);
+            document.getElementById('modal-folio-code').textContent = `FOLIO NO. 0${folioNum}`;
+            document.getElementById('modal-category').textContent = product.category;
+            document.getElementById('modal-title').textContent = product.name;
+            document.getElementById('modal-notes').textContent = product.notes;
+            document.getElementById('modal-description').textContent = product.longDescription || product.description;
+            document.getElementById('modal-origin').textContent = product.origin || 'Single-Origin Estate';
+            document.getElementById('modal-extraction').textContent = product.extraction || 'Cold-Pressed (<27°C)';
+            document.getElementById('modal-volume-spec').textContent = `${product.volume} UV-Obsidian`;
+            document.getElementById('modal-ritual').textContent = product.ritual || 'Use as a finishing culinary drizzle or aromatic ritual.';
+            document.getElementById('modal-qty').textContent = '1';
+            document.getElementById('modal-unit-note').textContent = `/ ${product.volume} vessel`;
+            updateModalPriceDisplay();
+            switchModalPlate(0);
+
+            const modal = document.getElementById('product-modal');
+            const box = document.getElementById('product-modal-box');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            box.classList.remove('scale-95', 'translate-y-4');
+            box.classList.add('scale-100', 'translate-y-0');
+        }
+
+        // Close Product Detail Pop-Up Modal
+        function closeProductModal() {
+            const modal = document.getElementById('product-modal');
+            const box = document.getElementById('product-modal-box');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            box.classList.remove('scale-100', 'translate-y-0');
+            box.classList.add('scale-95', 'translate-y-4');
+        }
+
+        // Close Modal on Escape Key
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeProductModal();
+            }
+        });
+
+        // Switch Visual Plate / Image Slot inside Modal
+        function switchModalPlate(plateIdx) {
+            activeModalPlate = plateIdx;
+            const p = activeModalProduct;
+            if (!p) return;
+
+            document.querySelectorAll('.modal-plate-btn').forEach((btn, idx) => {
+                if (idx === plateIdx) {
+                    btn.className = 'modal-plate-btn py-2 px-2 border border-accentGold bg-paper/10 text-paper font-cinzel text-[10px] tracking-wider uppercase transition-all';
+                } else {
+                    btn.className = 'modal-plate-btn py-2 px-2 border border-paper/15 hover:border-paper/40 text-paper/60 font-cinzel text-[10px] tracking-wider uppercase transition-all';
+                }
+            });
+
+            const container = document.getElementById('modal-visual-content');
+            // If an actual product image URL is provided in `product.images[plateIdx]`, render it directly
+            if (p.images && p.images[plateIdx]) {
+                container.innerHTML = `
+                    <img src="${p.images[plateIdx]}" alt="${p.name}" class="max-h-60 w-auto object-contain shadow-2xl">
+                `;
+                return;
+            }
+
+            // Elegant Architectural Specimen Placeholder Frames (Ready for Future Photography)
+            const binomial = (p.notes || '').split('|')[0].trim();
+            if (plateIdx === 0) {
+                container.innerHTML = `
+                    <div class="w-24 h-40 rounded-t-xl rounded-b-sm bg-gradient-to-b from-neutral-800 via-charcoal to-black border border-accentGold/40 shadow-2xl flex flex-col items-center justify-between p-3 mb-4 relative">
+                        <div class="w-8 h-4 -mt-6 bg-accentGold/80 rounded-t-sm border-b border-charcoal"></div>
+                        <div class="w-full py-2.5 px-1 ribbed-paper text-charcoal text-center shadow-inner">
+                            <span class="font-cinzel text-[8px] font-bold tracking-widest block">VATSOM</span>
+                            <span class="font-serif italic text-[7px] text-charcoal/70 block truncate">${binomial}</span>
+                        </div>
+                        <span class="font-cinzel text-[8px] tracking-widest text-accentGold/80">${p.volume}</span>
+                    </div>
+                    <span class="font-cinzel text-xs tracking-[0.2em] text-paper uppercase">Plate I — UV-Obsidian Vessel</span>
+                    <span class="font-serif italic text-[11px] text-paper/55 mt-1">Photography Frame Ready &bull; ${p.volume} Flacon</span>
+                `;
+            } else if (plateIdx === 1) {
+                container.innerHTML = `
+                    <div class="w-28 h-28 rounded-full border border-accentGold/35 bg-charcoal/90 flex items-center justify-center mb-4 shadow-inner">
+                        <i class="fa-solid fa-seedling text-3xl text-accentGold/85"></i>
+                    </div>
+                    <span class="font-cinzel text-xs tracking-[0.2em] text-paper uppercase">Plate II — ${binomial}</span>
+                    <span class="font-serif italic text-[11px] text-paper/55 mt-1">Botanical Specimen Study &bull; ${p.origin}</span>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="w-28 h-28 rounded-full border border-accentGold/35 bg-charcoal/90 flex items-center justify-center mb-4 shadow-inner">
+                        <i class="fa-solid fa-droplet text-3xl text-accentGold/85"></i>
+                    </div>
+                    <span class="font-cinzel text-xs tracking-[0.2em] text-paper uppercase">Plate III — First-Press Viscosity</span>
+                    <span class="font-serif italic text-[11px] text-paper/55 mt-1">Unfiltered Lipid Extraction &bull; ${p.extraction}</span>
+                `;
+            }
+        }
+
+        function adjustModalQty(delta) {
+            activeModalQty = Math.max(1, activeModalQty + delta);
+            document.getElementById('modal-qty').textContent = String(activeModalQty);
+            updateModalPriceDisplay();
+        }
+
+        function updateModalPriceDisplay() {
+            if (!activeModalProduct) return;
+            const total = activeModalProduct.price * activeModalQty;
+            document.getElementById('modal-price').textContent = `$${total.toFixed(2)}`;
+        }
+
+        function addModalProductToCart() {
+            if (!activeModalProduct) return;
+            addToCart(activeModalProduct.id, activeModalQty);
+            closeProductModal();
+        }
+
+        // Add to Cart Function (Supports custom quantity from modal or single add; strictly rejects negative/invalid IDs or quantities)
+        function addToCart(productId, qty = 1) {
+            if (!isValidProductIdentifier(productId)) {
+                showToast("Invalid Selection", "This elixir identifier is invalid and cannot be added.");
+                return false;
+            }
+            const safeQty = Math.floor(Number(qty));
+            if (!Number.isFinite(safeQty) || safeQty < 1) {
+                return false;
+            }
+
+            const product = products.find(
+                p => String(p.id) === String(productId) || (p.uuid && String(p.uuid) === String(productId))
+            );
+            if (!product) {
+                showToast("Unavailable Elixir", "Selected elixir was not found in the active catalogue.");
+                return false;
+            }
+
+            const maxAllowed = Number(product.maxOrderQuantity) > 0 ? Number(product.maxOrderQuantity) : 10;
+            const existingItem = cart.find(
+                item => String(item.id) === String(product.id) || (product.uuid && String(item.uuid) === String(product.uuid))
+            );
+
+            if (existingItem) {
+                existingItem.quantity = Math.min(maxAllowed, existingItem.quantity + safeQty);
+            } else {
+                cart.push({ ...product, quantity: Math.min(maxAllowed, safeQty) });
+            }
+
+            waxSealBadge.classList.add('hidden');
+            updateCartUI();
+            showToast("Inscribed on Order Slip", `${safeQty}× ${product.name} added to your parchment.`);
+            return true;
+        }
+
+        // Update Cart UI
+        function updateCartUI() {
+            // Defensively strip any corrupted/negative-ID or non-positive-quantity items before rendering
+            cart = cart.filter(
+                item =>
+                    item &&
+                    isValidProductIdentifier(item.id) &&
+                    Number.isFinite(Number(item.quantity)) &&
+                    Number(item.quantity) >= 1 &&
+                    Number.isFinite(Number(item.price)) &&
+                    Number(item.price) >= 0
+            );
+            saveConvenienceCart();
+            const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            cartCount.textContent = totalCount;
+            cartSubtotal.textContent = `$${subtotal.toFixed(2)}`;
+            cartTotal.textContent = `$${subtotal.toFixed(2)}`;
+
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = `
+                    <div class="text-center py-16 text-charcoal/60">
+                        <i class="fa-solid fa-scroll text-4xl mb-3 text-charcoal/35"></i>
+                        <p class="font-cinzel text-sm font-bold">Your order parchment is blank.</p>
+                        <p class="text-xs mt-1 font-serif italic">Select an elixir from the vault to inscribe your allocation.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            cartItemsContainer.innerHTML = cart.map(item => {
+                const safeItemId = escapeAttrClient(item.id);
+                return `
+                <div data-cart-item-id="${safeItemId}" class="py-4 flex items-center justify-between transition-all">
+                    <div class="flex-1 pr-4">
+                        <h4 class="font-cinzel font-bold text-sm text-charcoal">${item.name}</h4>
+                        <span class="text-xs text-charcoal/60 font-serif italic">${item.volume} &bull; $${Number(item.price).toFixed(2)} each</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="flex items-center border border-charcoal/25 bg-paperDark shadow-inner">
+                            <button onclick="updateQuantity('${safeItemId}', -1)" class="px-2.5 py-1 text-xs hover:bg-charcoal/10 transition-colors">-</button>
+                            <span class="px-2.5 text-xs font-bold font-cinzel">${item.quantity}</span>
+                            <button onclick="updateQuantity('${safeItemId}', 1)" class="px-2.5 py-1 text-xs hover:bg-charcoal/10 transition-colors">+</button>
+                        </div>
+                        <button onclick="removeItem('${safeItemId}')" class="text-charcoal/50 hover:text-red-800 transition-colors p-1" title="Crumple &amp; strike from slip">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        // Toggle Experimental 3D PaperCrumple Effect
+        function toggleCrumpleEffect() {
+            window.ENABLE_PAPER_CRUMPLE = !window.ENABLE_PAPER_CRUMPLE;
+            const btn = document.getElementById('crumple-toggle-btn');
+            if (btn) {
+                btn.textContent = window.ENABLE_PAPER_CRUMPLE ? 'CRUMPLE: ON' : 'CRUMPLE: OFF';
+                btn.className = window.ENABLE_PAPER_CRUMPLE
+                    ? 'px-2.5 py-1 text-[10px] font-cinzel font-bold tracking-wider bg-charcoal text-accentGold border border-charcoal/20 hover:opacity-85 transition-all'
+                    : 'px-2.5 py-1 text-[10px] font-cinzel font-bold tracking-wider bg-paperDark text-charcoal/60 border border-charcoal/20 hover:opacity-85 transition-all';
+            }
+        }
+
+        // Update Item Quantity
+        function updateQuantity(productId, change) {
+            if (!isValidProductIdentifier(productId)) return;
+            const item = cart.find(i => String(i.id) === String(productId));
+            if (!item) return;
+
+            const delta = Math.trunc(Number(change));
+            if (!Number.isFinite(delta) || delta === 0) return;
+
+            if (item.quantity + delta <= 0) {
+                removeItem(productId);
+                return;
+            }
+            const maxAllowed = Number(item.maxOrderQuantity) > 0 ? Number(item.maxOrderQuantity) : 10;
+            item.quantity = Math.min(maxAllowed, item.quantity + delta);
+            updateCartUI();
+        }
+
+        // Remove Item (with Experimental 3D PaperCrumple & Fall fallback)
+        function removeItem(productId) {
+            const item = cart.find(i => String(i.id) === String(productId));
+            const rowEl = cartItemsContainer.querySelector(`[data-cart-item-id="${CSS.escape ? CSS.escape(String(productId)) : String(productId)}"]`);
+
+            if (window.PaperCrumpleEffect && window.ENABLE_PAPER_CRUMPLE && rowEl && item) {
+                const itemSnapshot = { ...item };
+                cart = cart.filter(i => String(i.id) !== String(productId));
+
+                // Update totals & badge count immediately for zero-latency feedback
+                const totalCount = cart.reduce((sum, i) => sum + i.quantity, 0);
+                const subtotal = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+                cartCount.textContent = totalCount;
+                cartSubtotal.textContent = `$${subtotal.toFixed(2)}`;
+                cartTotal.textContent = `$${subtotal.toFixed(2)}`;
+
+                window.PaperCrumpleEffect.crumpleAndFall(rowEl, itemSnapshot, () => {
+                    updateCartUI();
+                });
+            } else {
+                cart = cart.filter(i => String(i.id) !== String(productId));
+                updateCartUI();
+            }
+        }
+
+        // Toast Notification
+        let toastTimeout;
+        function showToast(title, desc) {
+            toastTitle.textContent = title;
+            toastDesc.textContent = desc;
+            toast.classList.remove('translate-y-24', 'rotate-2', 'opacity-0');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('translate-y-24', 'rotate-2', 'opacity-0');
+            }, 3500);
+        }
+
+        // Persist Convenience Cart Only (Never trusted for prices or stock)
+        function saveConvenienceCart() {
+            try {
+                const minimalCart = cart
+                    .filter(item => item && isValidProductIdentifier(item.id) && Number(item.quantity) >= 1)
+                    .map(item => ({
+                        id: item.id,
+                        uuid: item.uuid || null,
+                        legacyId: item.legacyId || (typeof item.id === 'number' && item.id > 0 ? item.id : null),
+                        slug: item.slug || null,
+                        name: item.name,
+                        volume: item.volume,
+                        price: Math.max(0, Number(item.price) || 0),
+                        quantity: Math.max(1, Math.min(10, Math.floor(Number(item.quantity) || 1)))
+                    }));
+                localStorage.setItem('vatsom_cart_v1', JSON.stringify(minimalCart));
+            } catch (e) {}
+        }
+
+        function loadConvenienceCart() {
+            try {
+                const raw = localStorage.getItem('vatsom_cart_v1');
+                if (!raw) return;
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    cart = parsed
+                        .filter(i => i && isValidProductIdentifier(i.id) && Number.isFinite(Number(i.quantity)) && Number(i.quantity) >= 1)
+                        .map(i => {
+                            const liveProd = products.find(
+                                p =>
+                                    String(p.id) === String(i.id) ||
+                                    (i.uuid && p.uuid && String(p.uuid) === String(i.uuid)) ||
+                                    (i.slug && p.slug === i.slug)
+                            );
+                            if (!liveProd) return null;
+                            const safeQty = Math.max(1, Math.min(Number(liveProd.maxOrderQuantity) || 10, Math.floor(Number(i.quantity))));
+                            return { ...liveProd, quantity: safeQty };
+                        })
+                        .filter(Boolean);
+                }
+            } catch (e) {}
+        }
+
+        // Backend API State
+        let currentPatronUser = null;
+        let savedPatronAddresses = [];
+        let patronOrders = [];
+        let csrfTokenInMemory = '';
+        let publicConfig = { googleClientId: '', turnstileSiteKey: '' };
+        let currentTurnstileToken = '';
+        let activeCheckoutIdempotencyKey = '';
+
+        function getCsrfToken() {
+            if (csrfTokenInMemory) return csrfTokenInMemory;
+            const match = document.cookie.match(/(?:^|;\s*)vatsom_csrf=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : '';
+        }
+
+        async function storefrontApi(path, options = {}) {
+            const headers = {
+                'Accept': 'application/json',
+                ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                ...(options.headers || {})
+            };
+            const method = (options.method || 'GET').toUpperCase();
+            if (method !== 'GET' && method !== 'HEAD') {
+                const csrf = getCsrfToken();
+                if (csrf) headers['X-CSRF-Token'] = csrf;
+            }
+            const res = await fetch(path, {
+                ...options,
+                method,
+                headers,
+                credentials: 'same-origin'
+            });
+            const json = await res.json().catch(() => ({ success: false, error: { message: 'Unexpected server response' } }));
+            if (!res.ok || !json.success) {
+                const err = new Error(json?.error?.message || `Request failed (${res.status})`);
+                err.status = res.status;
+                err.code = json?.error?.code;
+                throw err;
+            }
+            return json.data;
+        }
+
+        function generateClientIdempotencyKey() {
+            const bytes = new Uint8Array(16);
+            crypto.getRandomValues(bytes);
+            return 'idem-' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Sync Storefront Products & CMS Content from Authoritative PostgreSQL API
+        async function syncFromBackendApi() {
+            try {
+                const [cfg, serverProds, serverContent, me] = await Promise.all([
+                    storefrontApi('/api/v1/public-config').catch(() => ({ googleClientId: '', turnstileSiteKey: '' })),
+                    storefrontApi('/api/v1/products').catch(() => null),
+                    storefrontApi('/api/v1/site-content').catch(() => null),
+                    storefrontApi('/api/v1/auth/me').catch(() => ({ authenticated: false, user: null }))
+                ]);
+
+                publicConfig = cfg || { googleClientId: '', turnstileSiteKey: '' };
+
+                if (Array.isArray(serverProds) && serverProds.length > 0) {
+                    products.length = 0;
+                    serverProds.forEach(p => products.push(p));
+                }
+
+                if (serverContent) {
+                    if (serverContent.heroBanner && document.getElementById('site-hero-banner')) {
+                        document.getElementById('site-hero-banner').textContent = serverContent.heroBanner;
+                    }
+                    if (serverContent.heroTitleHtml && document.getElementById('site-hero-title')) {
+                        document.getElementById('site-hero-title').innerHTML = serverContent.heroTitleHtml;
+                    }
+                    if (serverContent.heroSubtitle && document.getElementById('site-hero-subtitle')) {
+                        document.getElementById('site-hero-subtitle').textContent = serverContent.heroSubtitle;
+                    }
+                    if (serverContent.manifestoTitle && document.getElementById('site-manifesto-title')) {
+                        document.getElementById('site-manifesto-title').textContent = serverContent.manifestoTitle;
+                    }
+                    if (serverContent.manifestoP1 && document.getElementById('site-manifesto-p1')) {
+                        document.getElementById('site-manifesto-p1').textContent = serverContent.manifestoP1;
+                    }
+                    if (serverContent.manifestoP2 && document.getElementById('site-manifesto-p2')) {
+                        document.getElementById('site-manifesto-p2').textContent = serverContent.manifestoP2;
+                    }
+                }
+
+                if (me && me.authenticated && me.user) {
+                    currentPatronUser = me.user;
+                    updatePatronAuthUI();
+                } else {
+                    initGoogleIdentityButton();
+                }
+
+                loadConvenienceCart();
+                renderProducts();
+                updateCartUI();
+            } catch (err) {
+                console.warn('Backend sync fallback:', err);
+            }
+        }
+
+        function initGoogleIdentityButton() {
+            if (!publicConfig.googleClientId || !window.google || !window.google.accounts) return;
+            window.google.accounts.id.initialize({
+                client_id: publicConfig.googleClientId,
+                callback: handlePatronGoogleCredential,
+                auto_select: false
+            });
+            const btnEl = document.getElementById('storefront-google-btn');
+            if (btnEl) {
+                window.google.accounts.id.renderButton(btnEl, {
+                    theme: 'filled_black',
+                    size: 'large',
+                    text: 'continue_with',
+                    shape: 'rectangular',
+                    width: 260
+                });
+            }
+            window.google.accounts.id.prompt();
+        }
+
+        async function handlePatronGoogleCredential(response) {
+            try {
+                const authData = await storefrontApi('/api/v1/auth/google', {
+                    method: 'POST',
+                    body: JSON.stringify({ credential: response.credential })
+                });
+                csrfTokenInMemory = authData.csrfToken || '';
+                currentPatronUser = authData.user;
+                updatePatronAuthUI();
+                showToast("Welcome to the Atelier", `Signed in as ${currentPatronUser.name}`);
+                await refreshPatronAccountData();
+            } catch (err) {
+                showToast("Sign-In Notice", err.message || "Google sign-in could not be completed.");
+            }
+        }
+
+        async function logoutPatron() {
+            try {
+                await storefrontApi('/api/v1/auth/logout', { method: 'POST' });
+            } catch (e) {}
+            currentPatronUser = null;
+            csrfTokenInMemory = '';
+            updatePatronAuthUI();
+            closePatronModal();
+            showToast("Session Closed", "You have signed out of your Patron Ledger.");
+        }
+
+        function updatePatronAuthUI() {
+            const label = document.getElementById('patron-btn-label');
+            const authPanel = document.getElementById('patron-auth-panel');
+            const authedPanel = document.getElementById('patron-authenticated-panel');
+
+            if (currentPatronUser) {
+                if (label) label.textContent = currentPatronUser.name.split(' ')[0].toUpperCase();
+                authPanel?.classList.add('hidden');
+                authedPanel?.classList.remove('hidden');
+                const recInput = document.getElementById('cod-recipient-name');
+                if (recInput && !recInput.value) recInput.value = currentPatronUser.name;
+                const phoneInput = document.getElementById('cod-phone');
+                if (phoneInput && !phoneInput.value && currentPatronUser.mobileNumber) {
+                    phoneInput.value = currentPatronUser.mobileNumber;
+                }
+            } else {
+                if (label) label.textContent = 'PATRON SIGN IN';
+                authPanel?.classList.remove('hidden');
+                authedPanel?.classList.add('hidden');
+                initGoogleIdentityButton();
+            }
+        }
+
+        async function refreshPatronAccountData() {
+            if (!currentPatronUser) return;
+            try {
+                const [addrs, ords, prefs] = await Promise.all([
+                    storefrontApi('/api/v1/customer/addresses').catch(() => []),
+                    storefrontApi('/api/v1/customer/orders').catch(() => []),
+                    storefrontApi('/api/v1/marketing/preferences').catch(() => null)
+                ]);
+                savedPatronAddresses = Array.isArray(addrs) ? addrs : [];
+                patronOrders = Array.isArray(ords) ? ords : [];
+                renderPatronSavedAddresses();
+                renderPatronOrderHistory();
+                if (prefs) {
+                    document.getElementById('pref-table').checked = Boolean(prefs.table);
+                    document.getElementById('pref-atmosphere').checked = Boolean(prefs.atmosphere);
+                    document.getElementById('pref-collections').checked = Boolean(prefs.newCollections);
+                    document.getElementById('pref-updates').checked = Boolean(prefs.productUpdates);
+                    document.getElementById('pref-promos').checked = Boolean(prefs.promotionalCampaigns);
+                }
+            } catch (e) {}
+        }
+
+        function renderPatronSavedAddresses() {
+            const selectEl = document.getElementById('cod-saved-address-select');
+            const listEl = document.getElementById('patron-addresses-list');
+            if (selectEl) {
+                selectEl.innerHTML = `<option value="">-- Enter New Delivery Address Below --</option>` +
+                    savedPatronAddresses.map(a =>
+                        `<option value="${a.id}" ${a.isDefault ? 'selected' : ''}>${a.recipientName} — ${a.addressLine1}, ${a.city} (${a.pinCode})</option>`
+                    ).join('');
+                const defaultAddr = savedPatronAddresses.find(a => a.isDefault) || savedPatronAddresses[0];
+                if (defaultAddr) applySavedAddressSelection(defaultAddr.id);
+            }
+            if (listEl) {
+                if (savedPatronAddresses.length === 0) {
+                    listEl.innerHTML = `<p class="text-xs font-serif italic text-charcoal/65">No saved addresses yet. Addresses used during COD checkout can be saved automatically.</p>`;
+                    return;
+                }
+                listEl.innerHTML = savedPatronAddresses.map(a => `
+                    <div class="p-4 bg-paperDark/60 border border-charcoal/15 flex items-center justify-between">
+                        <div>
+                            <span class="font-cinzel font-bold text-xs text-charcoal">${a.recipientName} (${a.phoneNumber})</span>
+                            <p class="text-xs text-charcoal/75 mt-0.5">${a.addressLine1}${a.addressLine2 ? ', ' + a.addressLine2 : ''}, ${a.city}, ${a.state} — <strong>${a.pinCode}</strong></p>
+                        </div>
+                        <button type="button" onclick="removeSavedAddress('${a.id}')" class="text-xs text-waxRed hover:underline font-cinzel">Remove</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function applySavedAddressSelection(addressId) {
+            const addr = savedPatronAddresses.find(a => a.id === addressId);
+            if (!addr) return;
+            document.getElementById('cod-recipient-name').value = addr.recipientName || '';
+            document.getElementById('cod-phone').value = addr.phoneNumber || '';
+            document.getElementById('cod-addr1').value = addr.addressLine1 || '';
+            document.getElementById('cod-addr2').value = addr.addressLine2 || '';
+            document.getElementById('cod-city').value = addr.city || '';
+            document.getElementById('cod-state').value = addr.state || '';
+            document.getElementById('cod-pincode').value = addr.pinCode || '';
+        }
+
+        async function removeSavedAddress(addressId) {
+            try {
+                await storefrontApi(`/api/v1/customer/addresses/${encodeURIComponent(addressId)}`, { method: 'DELETE' });
+                await refreshPatronAccountData();
+                showToast("Address Removed", "Saved address removed from your Patron Ledger.");
+            } catch (err) {
+                showToast("Error", err.message || "Could not delete address.");
+            }
+        }
+
+        function renderPatronOrderHistory() {
+            const listEl = document.getElementById('patron-orders-list');
+            if (!listEl) return;
+            if (patronOrders.length === 0) {
+                listEl.innerHTML = `<p class="text-xs font-serif italic text-charcoal/65 py-6 text-center">No COD allocations recorded under your account yet.</p>`;
+                return;
+            }
+            listEl.innerHTML = patronOrders.map(o => {
+                const itemsHtml = (o.items || []).map(i => `<div class="text-xs">${i.quantity}× ${i.name} (${i.volume}) — $${Number(i.lineTotal || i.price * i.quantity).toFixed(2)}</div>`).join('');
+                const trackingHtml = o.tracking
+                    ? `<div class="mt-2 pt-2 border-t border-charcoal/10 text-[11px] text-charcoal/80">
+                         <i class="fa-solid fa-truck-fast text-accentGold mr-1"></i>
+                         <strong>${o.tracking.courierName}</strong> &bull; AWB: <span class="font-cinzel font-bold">${o.tracking.awbNumber}</span> &bull; State: ${o.tracking.currentShipmentState}
+                       </div>`
+                    : `<div class="mt-2 pt-2 border-t border-charcoal/10 text-[11px] font-serif italic text-charcoal/60">Awaiting courier AWB inscription from the Vatsom Chancery.</div>`;
+                return `
+                    <div class="p-4 bg-paperDark/65 border border-charcoal/20 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="font-cinzel font-bold text-sm text-charcoal">${o.orderId}</span>
+                            <span class="px-2.5 py-0.5 bg-charcoal text-accentGold font-cinzel text-[10px] font-bold tracking-widest uppercase">${o.status} (${o.orderStatus})</span>
+                        </div>
+                        <div class="text-[11px] text-charcoal/60 font-serif italic">${o.date} &bull; COD Total: <strong class="font-cinzel not-italic text-charcoal">$${Number(o.total).toFixed(2)}</strong></div>
+                        <div class="pt-1 space-y-0.5">${itemsHtml}</div>
+                        ${trackingHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function savePatronPreferences(event) {
+            event.preventDefault();
+            try {
+                await storefrontApi('/api/v1/marketing/preferences', {
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                        table: document.getElementById('pref-table').checked,
+                        atmosphere: document.getElementById('pref-atmosphere').checked,
+                        newCollections: document.getElementById('pref-collections').checked,
+                        productUpdates: document.getElementById('pref-updates').checked,
+                        promotionalCampaigns: document.getElementById('pref-promos').checked
+                    })
+                });
+                showToast("Preferences Sealed", "Your communication preferences have been updated.");
+            } catch (err) {
+                showToast("Update Failed", err.message || "Could not update preferences.");
+            }
+        }
+
+        function openPatronModal(initialTab = 'checkout') {
+            const modal = document.getElementById('patron-modal');
+            const box = document.getElementById('patron-modal-box');
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const totalEl = document.getElementById('cod-modal-total');
+            if (totalEl) totalEl.textContent = `$${subtotal.toFixed(2)}`;
+
+            activeCheckoutIdempotencyKey = generateClientIdempotencyKey();
+            updatePatronAuthUI();
+            if (currentPatronUser) {
+                switchPatronTab(initialTab);
+                refreshPatronAccountData();
+            }
+
+            // Render Turnstile challenge if siteKey is configured
+            const tsContainer = document.getElementById('checkout-turnstile-container');
+            if (tsContainer && publicConfig.turnstileSiteKey && window.turnstile) {
+                tsContainer.innerHTML = '';
+                window.turnstile.render(tsContainer, {
+                    sitekey: publicConfig.turnstileSiteKey,
+                    action: 'checkout',
+                    callback: function(token) {
+                        currentTurnstileToken = token;
+                    }
+                });
+            }
+
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            box.classList.remove('scale-95', 'translate-y-4');
+            box.classList.add('scale-100', 'translate-y-0');
+        }
+
+        function closePatronModal() {
+            const modal = document.getElementById('patron-modal');
+            const box = document.getElementById('patron-modal-box');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            box.classList.remove('scale-100', 'translate-y-0');
+            box.classList.add('scale-95', 'translate-y-4');
+        }
+
+        function switchPatronTab(tab) {
+            const tabs = ['checkout', 'orders', 'addresses', 'preferences'];
+            const views = {
+                checkout: document.getElementById('cod-checkout-form'),
+                orders: document.getElementById('patron-orders-view'),
+                addresses: document.getElementById('patron-addresses-view'),
+                preferences: document.getElementById('patron-prefs-view')
+            };
+            tabs.forEach(t => {
+                const btn = document.getElementById(`ptab-${t}`);
+                if (btn) {
+                    btn.className = t === tab
+                        ? 'px-4 py-2 bg-charcoal text-paper font-cinzel text-[11px] font-bold tracking-wider'
+                        : 'px-4 py-2 bg-paperDark text-charcoal font-cinzel text-[11px] font-bold tracking-wider';
+                }
+                if (views[t]) {
+                    if (t === tab) views[t].classList.remove('hidden');
+                    else views[t].classList.add('hidden');
+                }
+            });
+        }
+
+        // Open Authoritative COD Checkout Flow
+        function checkout() {
+            if (cart.length === 0) {
+                showToast("Blank Parchment", "Please inscribe at least one elixir before sealing.");
+                return;
+            }
+            openPatronModal('checkout');
+        }
+
+        async function submitAuthoritativeCodOrder(event) {
+            event.preventDefault();
+            const errEl = document.getElementById('cod-checkout-error');
+            if (errEl) errEl.classList.add('hidden');
+
+            if (!currentPatronUser) {
+                showToast("Sign-In Required", "Please sign in with Google to place a COD allocation.");
+                return;
+            }
+
+            updateCartUI();
+            if (cart.length === 0) {
+                showToast("Blank Parchment", "Your cart contains no valid elixirs.");
+                return;
+            }
+
+            const payload = {
+                items: cart.map(i => {
+                    const numId = Number(i.legacyId ?? i.id);
+                    const hasPositiveLegacyId = Number.isInteger(numId) && numId > 0;
+                    const uuidCandidate = i.uuid || (typeof i.id === 'string' && /^[0-9a-f]{8}-/i.test(i.id) ? i.id : null);
+                    return {
+                        ...(hasPositiveLegacyId ? { legacyId: numId } : {}),
+                        ...(uuidCandidate ? { productId: String(uuidCandidate) } : {}),
+                        ...(i.slug ? { slug: String(i.slug) } : {}),
+                        quantity: Math.max(1, Math.floor(Number(i.quantity) || 1))
+                    };
+                }),
+                deliveryAddress: {
+                    recipientName: document.getElementById('cod-recipient-name').value.trim(),
+                    phoneNumber: document.getElementById('cod-phone').value.trim(),
+                    addressLine1: document.getElementById('cod-addr1').value.trim(),
+                    addressLine2: document.getElementById('cod-addr2').value.trim() || null,
+                    city: document.getElementById('cod-city').value.trim(),
+                    state: document.getElementById('cod-state').value.trim(),
+                    pinCode: document.getElementById('cod-pincode').value.trim(),
+                    saveAddress: document.getElementById('cod-save-address').checked
+                },
+                idempotencyKey: activeCheckoutIdempotencyKey || generateClientIdempotencyKey(),
+                turnstileToken: currentTurnstileToken || 'dev-turnstile-token-placeholder',
+                marketingOptIn: {
+                    table: document.getElementById('cod-opt-table').checked,
+                    atmosphere: document.getElementById('cod-opt-atmosphere').checked,
+                    newCollections: document.getElementById('cod-opt-collections').checked
+                },
+                _hp: document.getElementById('cod-hp-field').value
+            };
+
+            try {
+                const createdOrder = await storefrontApi('/api/v1/orders', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                closePatronModal();
+                waxSealBadge.classList.remove('hidden');
+                showToast(
+                    `Order ${createdOrder.orderId} Sealed in Wax`,
+                    `Authoritative COD Total: $${Number(createdOrder.total).toFixed(2)}. Dispatched to Vatsom Atelier.`
+                );
+                cart = [];
+                saveConvenienceCart();
+                updateCartUI();
+                await syncFromBackendApi();
+
+                setTimeout(() => {
+                    if (cartDrawer.classList.contains('drawer-open')) {
+                        toggleCart();
+                    }
+                    setTimeout(() => waxSealBadge.classList.add('hidden'), 500);
+                }, 1400);
+            } catch (err) {
+                if (errEl) {
+                    errEl.textContent = err.message || 'Order validation failed.';
+                    errEl.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Toggle Cart Drawer (3D Paper Unfold)
+        function toggleCart() {
+            const isClosed = cartDrawer.classList.contains('drawer-closed');
+            if (isClosed) {
+                cartDrawer.classList.remove('drawer-closed');
+                cartDrawer.classList.add('drawer-open');
+                cartOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            } else {
+                cartDrawer.classList.remove('drawer-open');
+                cartDrawer.classList.add('drawer-closed');
+                cartOverlay.classList.add('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        cartBtn.addEventListener('click', toggleCart);
+        closeCart.addEventListener('click', toggleCart);
+        cartOverlay.addEventListener('click', toggleCart);
+
+        // Interactive 3D Origami V Logo Physics
+        function bindOrigamiLogoPhysics() {
+            document.querySelectorAll('.origami-logo-wrap').forEach(logo => {
+                if (logo.dataset.logoBound === 'true') return;
+                logo.dataset.logoBound = 'true';
+
+                let rafId = null;
+
+                logo.addEventListener('mouseenter', () => {
+                    logo.classList.add('is-hovering');
+                });
+
+                logo.addEventListener('mousemove', (e) => {
+                    if (rafId) cancelAnimationFrame(rafId);
+                    rafId = requestAnimationFrame(() => {
+                        const rect = logo.getBoundingClientRect();
+                        const x = (e.clientX - rect.left) / rect.width - 0.5;
+                        const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+                        const rotateX = y * -22;
+                        const rotateY = x * 22;
+
+                        logo.style.transform = `perspective(900px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale(1.06)`;
+                    });
+                });
+
+                logo.addEventListener('mouseleave', () => {
+                    if (rafId) cancelAnimationFrame(rafId);
+                    logo.classList.remove('is-hovering');
+                    logo.style.transform = '';
+                });
+            });
+        }
+
+        // Initialize Page
+        window.addEventListener('DOMContentLoaded', () => {
+            loadConvenienceCart();
+            renderProducts();
+            updateCartUI();
+            observePaperElements();
+            bindPaperCardPhysics();
+            bindOrigamiLogoPhysics();
+            syncFromBackendApi();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+# ============================================================================
+# VATSOM — Local Development Environment Variables (.dev.vars.example)
+# Copy this file to `.dev.vars` for local `wrangler dev` testing.
+# NEVER commit `.dev.vars` or real credentials to version control.
+# For production, set these using `npx wrangler secret put <KEY_NAME>`.
+# ============================================================================
+
+# Neon PostgreSQL Pooled Runtime Connection String (MUST use least-privilege `vatsom_app_runtime` role, NEVER `neondb_owner`)
+DATABASE_URL="postgresql://vatsom_app_runtime:REPLACE_WITH_RUNTIME_PASSWORD@ep-example-pooler.ap-south-1.aws.neon.tech/vatsom_dev?sslmode=require"
+
+# Direct Migration Connection String (Used ONLY locally with `psql` for applying DATABASE_MIGRATIONS/* as `vatsom_migrator`)
+DIRECT_DATABASE_URL="postgresql://vatsom_migrator:REPLACE_WITH_MIGRATOR_PASSWORD@ep-example.ap-south-1.aws.neon.tech/vatsom_dev?sslmode=require"
+
+# Google Identity Services OAuth 2.0 Client ID
+GOOGLE_CLIENT_ID="REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+
+# Cloudflare Turnstile Site Key (Public) & Secret Key (Private)
+TURNSTILE_SITE_KEY="1x00000000000000000000AA"
+TURNSTILE_SECRET_KEY="REPLACE_WITH_TURNSTILE_SECRET_KEY"
+
+# High-entropy 256-bit (64 hex chars) secret for HMAC signing of CSRF & tracking tokens
+SESSION_SIGNING_SECRET="REPLACE_WITH_64_HEX_CHARACTER_RANDOM_SECRET_FROM_OPENSSL_RAND_HEX_32"
+
+# Comma-separated list of verified Google emails or Google `sub` IDs allowed to assume Admin role
+ADMIN_ALLOWLIST="admin@vatsom.com"
+
+# Optional Email Provider Configuration (leave blank until provider is selected; outbox queues safely)
+EMAIL_PROVIDER="none"
+EMAIL_PROVIDER_API_KEY=""
+EMAIL_FROM_ADDRESS="atelier@vatsom.com"
+
+# Optional Courier Webhook Signing Secret (for future Shiprocket/Delhivery/BlueDart webhook verification)
+COURIER_WEBHOOK_SECRET="REPLACE_WITH_COURIER_WEBHOOK_HMAC_SECRET"
+
