@@ -22,12 +22,16 @@ TURNSTILE_SECRET_KEY="REPLACE_WITH_TURNSTILE_SECRET_KEY"
 SESSION_SIGNING_SECRET="REPLACE_WITH_64_HEX_CHARACTER_RANDOM_SECRET_FROM_OPENSSL_RAND_HEX_32"
 
 # Comma-separated list of verified Google emails or Google `sub` IDs allowed to assume Admin role
-ADMIN_ALLOWLIST="admin@vatsom.com"
+ADMIN_ALLOWLIST="admin@vatsom.in"
+
+# Cloudflare Zero Trust Access Perimeter for https://admin.vatsom.in (leave blank for local dev)
+CF_ACCESS_TEAM_DOMAIN=""
+CF_ACCESS_AUD=""
 
 # Optional Email Provider Configuration (leave blank until provider is selected; outbox queues safely)
 EMAIL_PROVIDER="none"
 EMAIL_PROVIDER_API_KEY=""
-EMAIL_FROM_ADDRESS="atelier@vatsom.com"
+EMAIL_FROM_ADDRESS="atelier@vatsom.in"
 
 # Optional Courier Webhook Signing Secret (for future Shiprocket/Delhivery/BlueDart webhook verification)
 COURIER_WEBHOOK_SECRET="REPLACE_WITH_COURIER_WEBHOOK_HMAC_SECRET"

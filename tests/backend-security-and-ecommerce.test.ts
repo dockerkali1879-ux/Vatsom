@@ -6,6 +6,7 @@ import { setTestDatabaseOverride } from '../src/db/client';
 import { AuthenticationError } from '../src/errors';
 import worker from '../src/index';
 import { setTestGoogleTokenVerifier } from '../src/security/google-auth';
+import { setTestCfAccessVerifier } from '../src/security/session';
 import { setTestTurnstileFetcher } from '../src/security/turnstile';
 import { Env } from '../src/types';
 import { TransactionalTestDatabase } from './helpers/test-db';
@@ -1630,6 +1631,255 @@ describe('VATSOM Production Backend — Security, Auth, COD Orders & Database In
         TEST_ENV
       );
       expect(reopenRes.status).toBe(409);
+    });
+  });
+
+  // ==========================================================================
+  // 10. vatsom.in MULTI-DOMAIN ARCHITECTURE, CLOUDFLARE ACCESS JWT & HSTS
+  // ==========================================================================
+  describe('10. vatsom.in Multi-Domain Routing, Cloudflare Access JWT, Cross-Subdomain Auth & HSTS', () => {
+    const VATSOM_IN_ENV: Env = {
+      ...TEST_ENV,
+      ENVIRONMENT: 'production',
+      APP_ORIGIN: 'https://vatsom.in',
+      ADMIN_ORIGIN: 'https://admin.vatsom.in',
+      API_ORIGIN: 'https://api.vatsom.in',
+      COOKIE_DOMAIN: 'vatsom.in',
+      TURNSTILE_ALLOWED_HOSTNAMES: 'vatsom.in,admin.vatsom.in',
+      ENABLE_HSTS: 'false',
+      ASSETS: {
+        fetch: async (req: Request) => {
+          const u = new URL(req.url);
+          return new Response(`ASSET:${u.pathname}`, {
+            status: 200,
+            headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          });
+        }
+      }
+    };
+
+    it('permanently redirects https://www.vatsom.in to https://vatsom.in with 301 preserving path and query', async () => {
+      const res = await worker.fetch(
+        new Request('https://www.vatsom.in/catalogue?division=TABLE'),
+        VATSOM_IN_ENV
+      );
+      expect(res.status).toBe(301);
+      expect(res.headers.get('Location')).toBe('https://vatsom.in/catalogue?division=TABLE');
+    });
+
+    it('isolates vatsom.in (storefront), api.vatsom.in (API only), and admin.vatsom.in (admin portal)', async () => {
+      // 1. Storefront root on vatsom.in serves storefront asset
+      const storeRoot = await worker.fetch(new Request('https://vatsom.in/'), VATSOM_IN_ENV);
+      expect(storeRoot.status).toBe(200);
+      expect(await storeRoot.text()).toBe('ASSET:/');
+
+      // 2. Admin portal HTML and Admin API routes are blocked (404) on the customer storefront hostname (vatsom.in)
+      const storeAdminHtml = await worker.fetch(
+        new Request('https://vatsom.in/admin-portal.html'),
+        VATSOM_IN_ENV
+      );
+      expect(storeAdminHtml.status).toBe(404);
+
+      const storeAdminApi = await worker.fetch(
+        new Request('https://vatsom.in/api/v1/admin/overview'),
+        VATSOM_IN_ENV
+      );
+      expect(storeAdminApi.status).toBe(404);
+
+      // 3. Dedicated API hostname (api.vatsom.in) serves /api/v1/* and blocks HTML static assets (404)
+      const apiHtmlAttempt = await worker.fetch(
+        new Request('https://api.vatsom.in/admin-portal.html'),
+        VATSOM_IN_ENV
+      );
+      expect(apiHtmlAttempt.status).toBe(404);
+
+      const apiHealth = await worker.fetch(
+        new Request('https://api.vatsom.in/api/v1/health', {
+          headers: { Origin: 'https://vatsom.in' }
+        }),
+        VATSOM_IN_ENV
+      );
+      expect(apiHealth.status).toBe(200);
+      expect(apiHealth.headers.get('Access-Control-Allow-Origin')).toBe('https://vatsom.in');
+      expect(apiHealth.headers.get('Content-Security-Policy')).toContain('https://api.vatsom.in');
+
+      // 4. Dedicated Admin hostname (admin.vatsom.in) rewrites / to /admin-portal.html and blocks /vatsom_premium_oils.html
+      const adminRoot = await worker.fetch(new Request('https://admin.vatsom.in/'), VATSOM_IN_ENV);
+      expect(adminRoot.status).toBe(200);
+      expect(await adminRoot.text()).toBe('ASSET:/admin-portal.html');
+
+      const adminStorefrontAttempt = await worker.fetch(
+        new Request('https://admin.vatsom.in/vatsom_premium_oils.html'),
+        VATSOM_IN_ENV
+      );
+      expect(adminStorefrontAttempt.status).toBe(404);
+    });
+
+    it('enforces cryptographic Cloudflare Access JWT verification on admin.vatsom.in and /api/v1/admin/* when CF_ACCESS_AUD is configured', async () => {
+      const cfProtectedEnv: Env = {
+        ...VATSOM_IN_ENV,
+        CF_ACCESS_TEAM_DOMAIN: 'vatsom-atelier.cloudflareaccess.com',
+        CF_ACCESS_AUD: 'aud-tag-vatsom-admin-12345'
+      };
+
+      setTestCfAccessVerifier(async (jwtAssertion, teamDomain, expectedAud) => {
+        if (
+          jwtAssertion === 'valid-cf-access-jwt' &&
+          teamDomain === 'vatsom-atelier.cloudflareaccess.com' &&
+          expectedAud === 'aud-tag-vatsom-admin-12345'
+        ) {
+          return { email: 'admin@vatsom.com', sub: 'google-sub-admin-1' };
+        }
+        throw new Error('Invalid CF Access signature or AUD');
+      });
+
+      try {
+        // 1. Request to https://admin.vatsom.in/ without Cf-Access-Jwt-Assertion -> 403
+        const noHeaderRes = await worker.fetch(
+          new Request('https://admin.vatsom.in/'),
+          cfProtectedEnv
+        );
+        expect(noHeaderRes.status).toBe(403);
+
+        // 2. Request with forged/invalid Cf-Access-Jwt-Assertion -> 403
+        const forgedRes = await worker.fetch(
+          new Request('https://admin.vatsom.in/', {
+            headers: { 'Cf-Access-Jwt-Assertion': 'forged-unsigned-token' }
+          }),
+          cfProtectedEnv
+        );
+        expect(forgedRes.status).toBe(403);
+
+        // 3. Request with valid Cf-Access-Jwt-Assertion -> 200
+        const validRes = await worker.fetch(
+          new Request('https://admin.vatsom.in/', {
+            headers: { 'Cf-Access-Jwt-Assertion': 'valid-cf-access-jwt' }
+          }),
+          cfProtectedEnv
+        );
+        expect(validRes.status).toBe(200);
+      } finally {
+        setTestCfAccessVerifier(null);
+      }
+    });
+
+    it('supports cross-subdomain authentication across vatsom.in, admin.vatsom.in, and api.vatsom.in without customer login overwriting admin session', async () => {
+      // 1. Admin logs in via https://api.vatsom.in/api/v1/auth/google from https://admin.vatsom.in
+      const adminLoginRes = await worker.fetch(
+        new Request('https://api.vatsom.in/api/v1/auth/google', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Origin: 'https://admin.vatsom.in'
+          },
+          body: JSON.stringify({
+            credential: `valid-admin-token-${crypto.randomUUID()}`,
+            adminPortalLogin: true
+          })
+        }),
+        VATSOM_IN_ENV
+      );
+      expect(adminLoginRes.status).toBe(200);
+      expect(adminLoginRes.headers.get('Access-Control-Allow-Origin')).toBe(
+        'https://admin.vatsom.in'
+      );
+
+      const adminSetCookieHeader = adminLoginRes.headers.get('set-cookie') || '';
+      expect(adminSetCookieHeader).toContain('Domain=vatsom.in');
+      expect(adminSetCookieHeader).toContain('vatsom_admin_session=');
+
+      const adminCookies = extractCookies(adminLoginRes);
+
+      // 2. Customer logs in on https://vatsom.in -> sets vatsom_session; admin's vatsom_admin_session remains intact
+      const custLoginRes = await worker.fetch(
+        new Request('https://api.vatsom.in/api/v1/auth/google', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Origin: 'https://vatsom.in'
+          },
+          body: JSON.stringify({
+            credential: `valid-customer-a-${crypto.randomUUID()}`,
+            adminPortalLogin: false
+          })
+        }),
+        VATSOM_IN_ENV
+      );
+      expect(custLoginRes.status).toBe(200);
+      const custCookies = extractCookies(custLoginRes);
+
+      // Combine customer vatsom_session with admin's vatsom_admin_session in the same browser cookie jar for *.vatsom.in
+      const adminOnlyPart = adminCookies.cookieHeader
+        .split(';')
+        .map((s) => s.trim())
+        .filter((s) => s.startsWith('vatsom_admin_'))
+        .join('; ');
+      const combinedBrowserCookies = `${custCookies.cookieHeader}; ${adminOnlyPart}`;
+
+      // 3. Admin portal calling /api/v1/auth/me with X-Vatsom-Portal: admin resolves the admin session & returns csrfToken
+      const adminMeRes = await worker.fetch(
+        new Request('https://api.vatsom.in/api/v1/auth/me', {
+          headers: {
+            Cookie: combinedBrowserCookies,
+            Origin: 'https://admin.vatsom.in',
+            'X-Vatsom-Portal': 'admin'
+          }
+        }),
+        VATSOM_IN_ENV
+      );
+      expect(adminMeRes.status).toBe(200);
+      const adminMeJson = (await adminMeRes.json()) as {
+        data: { authenticated: boolean; sessionScope: string; csrfToken?: string };
+      };
+      expect(adminMeJson.data.authenticated).toBe(true);
+      expect(adminMeJson.data.sessionScope).toBe('admin');
+      expect(adminMeJson.data.csrfToken).toBe(adminCookies.csrfToken);
+    });
+
+    it('rejects Turnstile tokens solved on unauthorized hostnames when TURNSTILE_ALLOWED_HOSTNAMES is set and controls HSTS via ENABLE_HSTS', async () => {
+      const cust = await loginCustomer('valid-customer-a');
+
+      setTestTurnstileFetcher(async (_secret, token) => ({
+        success: true,
+        hostname: token.includes('phishing-host') ? 'evil-clone.example.com' : 'vatsom.in',
+        action: 'checkout'
+      }));
+
+      const wrongHostRes = await worker.fetch(
+        new Request('https://api.vatsom.in/api/v1/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: cust.cookieHeader,
+            'X-CSRF-Token': cust.csrfToken,
+            Origin: 'https://vatsom.in'
+          },
+          body: JSON.stringify({
+            items: [{ legacyId: 1, quantity: 1 }],
+            deliveryAddress: {
+              recipientName: 'Lady Eleanor Vance',
+              phoneNumber: '9876543210',
+              addressLine1: '14 Chancery Lane',
+              city: 'New Delhi',
+              state: 'Delhi',
+              pinCode: '110001'
+            },
+            idempotencyKey: 'idem-turnstile-host-check',
+            turnstileToken: 'valid-ts-phishing-host-12345'
+          })
+        }),
+        VATSOM_IN_ENV
+      );
+      expect(wrongHostRes.status).toBe(403);
+
+      // Verify HSTS is omitted when ENABLE_HSTS="false", and emitted without premature preload when ENABLE_HSTS="true"
+      expect(wrongHostRes.headers.get('Strict-Transport-Security')).toBeNull();
+
+      const hstsEnabledRes = await worker.fetch(
+        new Request('https://api.vatsom.in/api/v1/health'),
+        { ...VATSOM_IN_ENV, ENABLE_HSTS: 'true' }
+      );
+      expect(hstsEnabledRes.headers.get('Strict-Transport-Security')).toBe('max-age=31536000');
     });
   });
 });

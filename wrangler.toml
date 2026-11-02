@@ -10,11 +10,16 @@ directory = "./public"
 binding = "ASSETS"
 html_handling = "auto-trailing-slash"
 not_found_handling = "none"
+run_worker_first = true
 
 [vars]
 ENVIRONMENT = "development"
 API_VERSION = "v1"
 APP_ORIGIN = "http://localhost:8787"
+ADMIN_ORIGIN = "http://localhost:8787"
+API_ORIGIN = "http://localhost:8787"
+TURNSTILE_ALLOWED_HOSTNAMES = "localhost,127.0.0.1"
+ENABLE_HSTS = "false"
 PRIVACY_POLICY_VERSION = "2026.11"
 COD_MAX_ORDER_PAISE = "5000000"
 COD_FREE_DELIVERY_THRESHOLD_PAISE = "1500000"
@@ -41,7 +46,11 @@ name = "vatsom-ecommerce-worker-staging"
 [env.staging.vars]
 ENVIRONMENT = "staging"
 API_VERSION = "v1"
-APP_ORIGIN = "https://vatsom-ecommerce-worker-staging.dockerkali1879.workers.dev"
+APP_ORIGIN = "https://vatsom-ecommerce-worker-staging.dockerkali1879.workers.dev,https://staging.vatsom.in"
+ADMIN_ORIGIN = "https://vatsom-ecommerce-worker-staging.dockerkali1879.workers.dev,https://admin-staging.vatsom.in"
+API_ORIGIN = "https://api-staging.vatsom.in"
+TURNSTILE_ALLOWED_HOSTNAMES = "vatsom-ecommerce-worker-staging.dockerkali1879.workers.dev,staging.vatsom.in,admin-staging.vatsom.in,localhost"
+ENABLE_HSTS = "false"
 PRIVACY_POLICY_VERSION = "2026.11"
 COD_MAX_ORDER_PAISE = "5000000"
 COD_FREE_DELIVERY_THRESHOLD_PAISE = "1500000"
@@ -55,13 +64,25 @@ ADMIN_SESSION_TTL_SECONDS = "28800"
 # ============================================================================
 # PRODUCTION ENVIRONMENT (`npx wrangler deploy --env production`)
 # Connects strictly to the isolated `vatsom-production` Neon branch via `vatsom-hyperdrive-prod`
+# Uses Cloudflare Workers Custom Domains (automatically provisions DNS records & edge SSL certificates)
 # ============================================================================
 [env.production]
 name = "vatsom-ecommerce-worker-prod"
+routes = [
+  { pattern = "vatsom.in", custom_domain = true },
+  { pattern = "www.vatsom.in", custom_domain = true },
+  { pattern = "api.vatsom.in", custom_domain = true },
+  { pattern = "admin.vatsom.in", custom_domain = true }
+]
 [env.production.vars]
 ENVIRONMENT = "production"
 API_VERSION = "v1"
-APP_ORIGIN = "https://vatsom.com"
+APP_ORIGIN = "https://vatsom.in"
+ADMIN_ORIGIN = "https://admin.vatsom.in"
+API_ORIGIN = "https://api.vatsom.in"
+COOKIE_DOMAIN = "vatsom.in"
+TURNSTILE_ALLOWED_HOSTNAMES = "vatsom.in,admin.vatsom.in"
+ENABLE_HSTS = "false"
 PRIVACY_POLICY_VERSION = "2026.11"
 COD_MAX_ORDER_PAISE = "5000000"
 COD_FREE_DELIVERY_THRESHOLD_PAISE = "1500000"

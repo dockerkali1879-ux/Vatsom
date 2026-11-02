@@ -91,10 +91,14 @@ export function serializeCookie(
     secure?: boolean;
     sameSite?: 'Strict' | 'Lax' | 'None';
     path?: string;
+    domain?: string;
   }
 ): string {
   const parts = [`${name}=${encodeURIComponent(value)}`];
   parts.push(`Path=${options.path ?? '/'}`);
+  if (options.domain && options.domain.trim()) {
+    parts.push(`Domain=${options.domain.trim()}`);
+  }
   if (options.maxAgeSeconds !== undefined) {
     parts.push(`Max-Age=${Math.max(0, Math.floor(options.maxAgeSeconds))}`);
     const expires = new Date(Date.now() + options.maxAgeSeconds * 1000);

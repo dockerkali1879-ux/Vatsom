@@ -1,8 +1,32 @@
 import { formatErrorResponse } from './errors';
 import { ApiSuccessResponse, Env } from './types';
 
+export function getAllowedOrigins(env: Env): Set<string> {
+  const rawList = [
+    env.APP_ORIGIN || 'http://localhost:8787',
+    env.ADMIN_ORIGIN || '',
+    env.API_ORIGIN || ''
+  ];
+  const allowed = new Set<string>();
+  for (const item of rawList) {
+    for (const part of item.split(',')) {
+      const trimmed = part.trim().replace(/\/+$/, '');
+      if (trimmed && trimmed !== '*' && (trimmed.startsWith('https://') || trimmed.startsWith('http://'))) {
+        allowed.add(trimmed);
+      }
+    }
+  }
+  return allowed;
+}
+
 export function buildSecurityHeaders(env: Env, requestOrigin?: string | null): Record<string, string> {
-  const allowedOrigin = env.APP_ORIGIN || 'http://localhost:8787';
+  const allowedOrigins = getAllowedOrigins(env);
+  const apiOriginClean = (env.API_ORIGIN || '').trim().replace(/\/+$/, '');
+  const connectSrcApi =
+    apiOriginClean && (apiOriginClean.startsWith('https://') || apiOriginClean.startsWith('http://'))
+      ? ` ${apiOriginClean}`
+      : '';
+
   const headers: Record<string, string> = {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
@@ -17,16 +41,19 @@ export function buildSecurityHeaders(env: Env, requestOrigin?: string | null): R
       "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:",
       "img-src 'self' data: blob: https:",
       "frame-src https://accounts.google.com https://challenges.cloudflare.com",
-      "connect-src 'self' https://accounts.google.com https://challenges.cloudflare.com"
+      `connect-src 'self'${connectSrcApi} https://accounts.google.com https://challenges.cloudflare.com`
     ].join('; ')
   };
 
-  if (env.ENVIRONMENT === 'production') {
-    headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload';
+  // Enable HSTS only after HTTPS has been verified (opt-in via ENABLE_HSTS="true"),
+  // and never emit includeSubDomains or preload prematurely.
+  if (env.ENVIRONMENT === 'production' && env.ENABLE_HSTS === 'true') {
+    headers['Strict-Transport-Security'] = 'max-age=31536000';
   }
 
-  if (requestOrigin && requestOrigin === allowedOrigin) {
-    headers['Access-Control-Allow-Origin'] = allowedOrigin;
+  const normalizedReqOrigin = requestOrigin?.trim().replace(/\/+$/, '');
+  if (normalizedReqOrigin && allowedOrigins.has(normalizedReqOrigin)) {
+    headers['Access-Control-Allow-Origin'] = normalizedReqOrigin;
     headers['Access-Control-Allow-Credentials'] = 'true';
     headers['Vary'] = 'Origin';
   }

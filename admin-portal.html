@@ -958,8 +958,29 @@
         let currentAdminUser = null;
         let csrfTokenInMemory = '';
 
+        function resolveAdminApiBase() {
+            if (window.VATSOM_API_BASE) return String(window.VATSOM_API_BASE).replace(/\/+$/, '');
+            const host = ((window.location && window.location.hostname) || '').toLowerCase();
+            if (host === 'admin.vatsom.in' || host === 'vatsom.in' || host === 'www.vatsom.in') {
+                return 'https://api.vatsom.in';
+            }
+            if (host === 'admin-staging.vatsom.in' || host === 'staging.vatsom.in') {
+                return 'https://api-staging.vatsom.in';
+            }
+            return '';
+        }
+        const API_BASE_URL = resolveAdminApiBase();
+
+        function resolveMediaUrl(url) {
+            if (!url) return '';
+            if (url.startsWith('/api/') && API_BASE_URL) return API_BASE_URL + url;
+            return url;
+        }
+
         function getCsrfToken() {
             if (csrfTokenInMemory) return csrfTokenInMemory;
+            const adminMatch = document.cookie.match(/(?:^|;\s*)vatsom_admin_csrf=([^;]+)/);
+            if (adminMatch) return decodeURIComponent(adminMatch[1]);
             const match = document.cookie.match(/(?:^|;\s*)vatsom_csrf=([^;]+)/);
             return match ? decodeURIComponent(match[1]) : '';
         }
@@ -967,6 +988,7 @@
         async function apiRequest(path, options = {}) {
             const headers = {
                 'Accept': 'application/json',
+                'X-Vatsom-Portal': 'admin',
                 ...(options.body ? { 'Content-Type': 'application/json' } : {}),
                 ...(options.headers || {})
             };
@@ -975,11 +997,12 @@
                 const csrf = getCsrfToken();
                 if (csrf) headers['X-CSRF-Token'] = csrf;
             }
-            const res = await fetch(path, {
+            const targetUrl = path.startsWith('http') ? path : (API_BASE_URL + path);
+            const res = await fetch(targetUrl, {
                 ...options,
                 method,
                 headers,
-                credentials: 'same-origin'
+                credentials: API_BASE_URL ? 'include' : 'same-origin'
             });
             const json = await res.json().catch(() => ({ success: false, error: { message: 'Invalid server response' } }));
             if (!res.ok || !json.success) {
@@ -1021,6 +1044,7 @@
 
                 if (me.authenticated && me.user && me.user.role === 'admin' && me.sessionScope === 'admin') {
                     currentAdminUser = me.user;
+                    if (me.csrfToken) csrfTokenInMemory = me.csrfToken;
                     gate.classList.add('hidden');
                     if (badge) {
                         badge.textContent = `ADMIN: ${me.user.email.toUpperCase()}`;
@@ -1371,7 +1395,7 @@
                             <!-- Mini Visual Plate Preview Bar -->
                             <div class="mb-4 h-36 bg-charcoal text-paper border border-charcoal/20 flex items-center justify-center relative overflow-hidden">
                                 ${firstImg
-                                    ? `<img src="${escapeHtmlClient(firstImg)}" alt="${escapeHtmlClient(product.name)}" class="h-full w-full object-contain p-2">`
+                                    ? `<img src="${escapeHtmlClient(resolveMediaUrl(firstImg))}" alt="${escapeHtmlClient(product.name)}" class="h-full w-full object-contain p-2">`
                                     : `<div class="text-center p-4">
                                         <i class="fa-solid fa-wine-bottle text-2xl text-accentGold/80 mb-1.5 block"></i>
                                         <span class="font-cinzel text-[10px] tracking-[0.2em] text-paper/60 uppercase block">${escapeHtmlClient(product.volume)} UV-Obsidian Vessel</span>
@@ -1495,7 +1519,7 @@
                 urlInput.value = src.startsWith('data:') ? '[Uploaded Local WebP Binary]' : src;
 
                 if (src) {
-                    previewEl.innerHTML = `<img src="${escapeHtmlClient(src)}" alt="Plate ${i + 1}" class="h-full w-full object-contain p-1">`;
+                    previewEl.innerHTML = `<img src="${escapeHtmlClient(resolveMediaUrl(src))}" alt="Plate ${i + 1}" class="h-full w-full object-contain p-1">`;
                 } else {
                     previewEl.innerHTML = `<span class="text-[10px] font-cinzel text-paper/40 tracking-widest">NO IMAGE</span>`;
                 }

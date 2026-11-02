@@ -105,6 +105,15 @@ export async function verifyTurnstileToken(
     throw new TurnstileError('Turnstile hostname mismatch.');
   }
 
+  if (env.TURNSTILE_ALLOWED_HOSTNAMES && result.hostname) {
+    const allowedHosts = env.TURNSTILE_ALLOWED_HOSTNAMES.split(',')
+      .map((h) => h.trim().toLowerCase())
+      .filter(Boolean);
+    if (allowedHosts.length > 0 && !allowedHosts.includes(result.hostname.toLowerCase())) {
+      throw new TurnstileError('Turnstile hostname is not in the allowed hostnames for this environment.');
+    }
+  }
+
   // 3. Record token hash so it can never be replayed
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
   await db.query(

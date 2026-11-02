@@ -637,7 +637,7 @@ export async function processNotificationOutboxBatch(
       const rendered = renderNotificationEmail(job.template_name, job.payload);
       const dispatchResult = await dispatchEmailViaProvider(env, {
         to: job.recipient_email,
-        from: env.EMAIL_FROM_ADDRESS || 'atelier@vatsom.com',
+        from: env.EMAIL_FROM_ADDRESS || 'atelier@vatsom.in',
         subject: rendered.subject,
         html: rendered.html,
         text: rendered.text,
@@ -776,4 +776,18 @@ export async function getNotificationOutboxMonitoring(
     recentJobs: recentRes.rows
   };
 }
+
+/**
+ * Purges expired rows from ephemeral security, rate-limit, idempotency, and session tables.
+ * Invoked periodically by the Cloudflare Worker scheduled Cron trigger.
+ */
+export async function purgeExpiredSecurityAndSessionRecords(db: DatabaseClient): Promise<void> {
+  await Promise.all([
+    db.query(`DELETE FROM consumed_security_tokens WHERE expires_at <= NOW()`),
+    db.query(`DELETE FROM rate_limit_counters WHERE expires_at <= NOW()`),
+    db.query(`DELETE FROM idempotency_records WHERE expires_at <= NOW()`),
+    db.query(`DELETE FROM sessions WHERE expires_at <= NOW()`)
+  ]);
+}
+
 

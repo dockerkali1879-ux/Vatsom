@@ -9,7 +9,9 @@ import {
   issueSession,
   requireAuthenticatedAdmin,
   requireAuthenticatedCustomer,
-  resolveRequestSession
+  resolveRequestSession,
+  resolveVerifiedCsrfCookie,
+  verifyCloudflareAccessJwt
 } from './security/session';
 import { verifyTurnstileToken } from './security/turnstile';
 import {
@@ -49,6 +51,7 @@ import {
   getCustomerMarketingPreferences,
   getNotificationOutboxMonitoring,
   processNotificationOutboxBatch,
+  purgeExpiredSecurityAndSessionRecords,
   subscribeMarketing,
   unsubscribeMarketing,
   updateCustomerMarketingPreferences
@@ -94,10 +97,24 @@ export default {
   async fetch(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     const requestId = generateSecureToken(12);
     const url = new URL(request.url);
+    const hostname = url.hostname.toLowerCase();
     const method = request.method.toUpperCase();
     const requestOrigin = request.headers.get('origin');
 
-    // Handle CORS Preflight for same-origin / configured APP_ORIGIN
+    // Permanent 301 redirect from www.vatsom.in -> https://vatsom.in
+    if (hostname === 'www.vatsom.in') {
+      const secHeaders = buildSecurityHeaders(env, requestOrigin);
+      return new Response(null, {
+        status: 301,
+        headers: {
+          ...secHeaders,
+          Location: `https://vatsom.in${url.pathname}${url.search}`,
+          'Cache-Control': 'public, max-age=3600'
+        }
+      });
+    }
+
+    // Handle CORS Preflight for configured allowed origins (APP_ORIGIN, ADMIN_ORIGIN, API_ORIGIN)
     if (method === 'OPTIONS') {
       const secHeaders = buildSecurityHeaders(env, requestOrigin);
       return new Response(null, {
@@ -105,29 +122,73 @@ export default {
         headers: {
           ...secHeaders,
           'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, X-CSRF-Token, Idempotency-Key'
+          'Access-Control-Allow-Headers':
+            'Content-Type, X-CSRF-Token, Idempotency-Key, X-Vatsom-Portal'
         }
       });
     }
 
-    // Non-API routes -> serve static assets via Cloudflare Workers Assets binding
-    if (!url.pathname.startsWith('/api/')) {
-      if (env.ASSETS) {
-        const assetRes = await env.ASSETS.fetch(request);
-        const headers = new Headers(assetRes.headers);
-        const secHeaders = buildSecurityHeaders(env, requestOrigin);
-        for (const [k, v] of Object.entries(secHeaders)) {
-          if (!headers.has(k)) headers.set(k, v);
-        }
-        return new Response(assetRes.body, {
-          status: assetRes.status,
-          headers
-        });
-      }
-      return jsonError(new NotFoundError('Route not found.'), env, requestId, requestOrigin);
-    }
+    const isDedicatedApiHost = hostname === 'api.vatsom.in' || hostname === 'api-staging.vatsom.in';
+    const isDedicatedAdminHost =
+      hostname === 'admin.vatsom.in' || hostname === 'admin-staging.vatsom.in';
+    const isStorefrontCustomDomain =
+      hostname === 'vatsom.in' || hostname === 'staging.vatsom.in';
 
     try {
+      // Enforce Cloudflare Access JWT verification at the perimeter for all requests to admin.vatsom.in
+      if (isDedicatedAdminHost) {
+        await verifyCloudflareAccessJwt(env, request);
+      }
+
+      // Block public access to admin portal HTML & admin API routes on the customer storefront domain (vatsom.in)
+      if (
+        isStorefrontCustomDomain &&
+        (url.pathname.startsWith('/admin-portal') ||
+          url.pathname === '/api/v1/admin' ||
+          url.pathname.startsWith('/api/v1/admin/'))
+      ) {
+        return jsonError(new NotFoundError('Route not found.'), env, requestId, requestOrigin);
+      }
+
+      // Non-API routes -> serve static assets via Cloudflare Workers Assets binding (with hostname isolation)
+      if (!url.pathname.startsWith('/api/')) {
+        // Dedicated API hostname (api.vatsom.in) never serves HTML/JS static assets
+        if (isDedicatedApiHost) {
+          return jsonError(
+            new NotFoundError('API origin only serves /api/v1/* endpoints.'),
+            env,
+            requestId,
+            requestOrigin
+          );
+        }
+
+        if (env.ASSETS) {
+          let assetRequest = request;
+          if (isDedicatedAdminHost) {
+            if (url.pathname === '/vatsom_premium_oils.html') {
+              return jsonError(new NotFoundError('Route not found.'), env, requestId, requestOrigin);
+            }
+            if (url.pathname === '/' || url.pathname === '/index.html') {
+              const adminAssetUrl = new URL(request.url);
+              adminAssetUrl.pathname = '/admin-portal.html';
+              assetRequest = new Request(adminAssetUrl.toString(), request);
+            }
+          }
+
+          const assetRes = await env.ASSETS.fetch(assetRequest);
+          const headers = new Headers(assetRes.headers);
+          const secHeaders = buildSecurityHeaders(env, requestOrigin);
+          for (const [k, v] of Object.entries(secHeaders)) {
+            if (!headers.has(k)) headers.set(k, v);
+          }
+          return new Response(assetRes.body, {
+            status: assetRes.status,
+            headers
+          });
+        }
+        return jsonError(new NotFoundError('Route not found.'), env, requestId, requestOrigin);
+      }
+
       const pathname = url.pathname.replace(/\/+$/, '') || '/';
 
       // ======================================================================
@@ -255,6 +316,10 @@ export default {
 
         const body = await parseAndValidateJson(request, GoogleAuthRequestSchema, 16384);
 
+        if (body.adminPortalLogin) {
+          await verifyCloudflareAccessJwt(env, request);
+        }
+
         if (body.turnstileToken) {
           await verifyTurnstileToken(db, env, body.turnstileToken, { remoteIp: rawIp });
         }
@@ -278,7 +343,8 @@ export default {
           customerUser,
           requestedScope,
           ipHash,
-          userAgent
+          userAgent,
+          hostname
         );
 
         if (ctx) {
@@ -313,7 +379,7 @@ export default {
             [reqCtx.session.id]
           );
         }
-        const clearCookies = clearSessionCookies(env);
+        const clearCookies = clearSessionCookies(env, hostname);
         const response = jsonSuccess({ loggedOut: true }, env, { requestOrigin });
         const headers = new Headers(response.headers);
         for (const c of clearCookies) {
@@ -330,11 +396,13 @@ export default {
             { requestOrigin }
           );
         }
+        const csrfToken = await resolveVerifiedCsrfCookie(request, reqCtx.session);
         return jsonSuccess(
           {
             authenticated: true,
             user: reqCtx.user,
             sessionScope: reqCtx.session.sessionScope,
+            ...(csrfToken ? { csrfToken } : {}),
             expiresAt: reqCtx.session.expiresAt.toISOString()
           },
           env,
@@ -732,7 +800,10 @@ export default {
    */
   async scheduled(_controller: unknown, env: Env, ctx?: ExecutionContext): Promise<void> {
     const db = resolveDatabaseClient(env);
-    const task = processNotificationOutboxBatch(db, env, 25).catch((err) => {
+    const task = Promise.all([
+      processNotificationOutboxBatch(db, env, 25),
+      purgeExpiredSecurityAndSessionRecords(db)
+    ]).catch((err) => {
       console.error(
         JSON.stringify({
           level: 'error',

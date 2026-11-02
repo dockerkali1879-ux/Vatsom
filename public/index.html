@@ -1750,6 +1750,25 @@
         let currentTurnstileToken = '';
         let activeCheckoutIdempotencyKey = '';
 
+        function resolveStorefrontApiBase() {
+            if (window.VATSOM_API_BASE) return String(window.VATSOM_API_BASE).replace(/\/+$/, '');
+            const host = ((window.location && window.location.hostname) || '').toLowerCase();
+            if (host === 'vatsom.in' || host === 'www.vatsom.in') {
+                return 'https://api.vatsom.in';
+            }
+            if (host === 'staging.vatsom.in') {
+                return 'https://api-staging.vatsom.in';
+            }
+            return '';
+        }
+        const API_BASE_URL = resolveStorefrontApiBase();
+
+        function resolveMediaUrl(url) {
+            if (!url) return '';
+            if (url.startsWith('/api/') && API_BASE_URL) return API_BASE_URL + url;
+            return url;
+        }
+
         function getCsrfToken() {
             if (csrfTokenInMemory) return csrfTokenInMemory;
             const match = document.cookie.match(/(?:^|;\s*)vatsom_csrf=([^;]+)/);
@@ -1767,11 +1786,12 @@
                 const csrf = getCsrfToken();
                 if (csrf) headers['X-CSRF-Token'] = csrf;
             }
-            const res = await fetch(path, {
+            const targetUrl = path.startsWith('http') ? path : (API_BASE_URL + path);
+            const res = await fetch(targetUrl, {
                 ...options,
                 method,
                 headers,
-                credentials: 'same-origin'
+                credentials: API_BASE_URL ? 'include' : 'same-origin'
             });
             const json = await res.json().catch(() => ({ success: false, error: { message: 'Unexpected server response' } }));
             if (!res.ok || !json.success) {
@@ -1803,7 +1823,12 @@
 
                 if (Array.isArray(serverProds) && serverProds.length > 0) {
                     products.length = 0;
-                    serverProds.forEach(p => products.push(p));
+                    serverProds.forEach(p => {
+                        if (Array.isArray(p.images)) {
+                            p.images = p.images.map(img => resolveMediaUrl(img));
+                        }
+                        products.push(p);
+                    });
                 }
 
                 if (serverContent) {
@@ -1829,6 +1854,7 @@
 
                 if (me && me.authenticated && me.user) {
                     currentPatronUser = me.user;
+                    if (me.csrfToken) csrfTokenInMemory = me.csrfToken;
                     updatePatronAuthUI();
                 } else {
                     initGoogleIdentityButton();
@@ -2175,6 +2201,12 @@
                     setTimeout(() => waxSealBadge.classList.add('hidden'), 500);
                 }, 1400);
             } catch (err) {
+                if (window.turnstile && document.getElementById('checkout-turnstile-container')) {
+                    try {
+                        currentTurnstileToken = '';
+                        window.turnstile.reset('#checkout-turnstile-container');
+                    } catch (_) {}
+                }
                 if (errEl) {
                     errEl.textContent = err.message || 'Order validation failed.';
                     errEl.classList.remove('hidden');

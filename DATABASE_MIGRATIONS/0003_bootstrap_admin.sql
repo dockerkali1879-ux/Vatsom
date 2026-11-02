@@ -89,13 +89,13 @@ COMMIT;
 --   2. Have the administrator sign in once via Google on the storefront or
 --      admin portal so their verified `google_sub` record exists in `customers`.
 --   3. Verify the account and run the audited promotion block below (replacing
---      `admin@vatsom.com` with your verified Google email):
+--      `admin@vatsom.in` with your verified Google email):
 --
 -- BEGIN;
 -- WITH promoted AS (
 --     UPDATE customers
 --     SET role = 'admin', updated_at = NOW()
---     WHERE email = lower('admin@vatsom.com')
+--     WHERE email = lower('admin@vatsom.in')
 --       AND email_verified = TRUE
 --       AND account_status = 'active'
 --     RETURNING id, email, google_sub

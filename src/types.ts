@@ -1,7 +1,12 @@
 export interface Env {
-  ENVIRONMENT: 'development' | 'production' | 'test';
+  ENVIRONMENT: 'development' | 'staging' | 'production' | 'test';
   API_VERSION: string;
   APP_ORIGIN: string;
+  ADMIN_ORIGIN?: string;
+  API_ORIGIN?: string;
+  COOKIE_DOMAIN?: string;
+  TURNSTILE_ALLOWED_HOSTNAMES?: string;
+  ENABLE_HSTS?: string;
   PRIVACY_POLICY_VERSION: string;
   COD_MAX_ORDER_PAISE: string;
   COD_FREE_DELIVERY_THRESHOLD_PAISE: string;

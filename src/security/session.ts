@@ -1,3 +1,4 @@
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import {
   generateSecureToken,
   parseCookies,
@@ -7,11 +8,98 @@ import {
 } from '../crypto';
 import { DatabaseClient } from '../db/client';
 import { AuthenticationError, AuthorizationError, CsrfError } from '../errors';
+import { getAllowedOrigins } from '../response';
 import { AuthenticatedUser, Env, RequestContext, SessionInfo, UserRole } from '../types';
 import { isEmailOrSubInAdminAllowlist } from './google-auth';
 
 export const SESSION_COOKIE_NAME = 'vatsom_session';
 export const CSRF_COOKIE_NAME = 'vatsom_csrf';
+export const ADMIN_SESSION_COOKIE_NAME = 'vatsom_admin_session';
+export const ADMIN_CSRF_COOKIE_NAME = 'vatsom_admin_csrf';
+
+export type CfAccessVerifier = (
+  jwtAssertion: string,
+  teamDomain: string,
+  expectedAud: string
+) => Promise<{ email?: string; sub?: string }>;
+
+const cfAccessJwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
+let customCfAccessVerifier: CfAccessVerifier | null = null;
+
+export function setTestCfAccessVerifier(verifier: CfAccessVerifier | null): void {
+  customCfAccessVerifier = verifier;
+}
+
+function normalizeTeamDomain(raw: string): string {
+  const cleaned = raw.trim().replace(/^https?:\/\//i, '').replace(/\/+$/, '').toLowerCase();
+  if (!cleaned) return '';
+  return cleaned.includes('.') ? cleaned : `${cleaned}.cloudflareaccess.com`;
+}
+
+async function defaultCfAccessVerifier(
+  jwtAssertion: string,
+  teamDomain: string,
+  expectedAud: string
+): Promise<{ email?: string; sub?: string }> {
+  const normalizedDomain = normalizeTeamDomain(teamDomain);
+  if (!normalizedDomain) {
+    throw new AuthorizationError(
+      'Cloudflare Access team domain (CF_ACCESS_TEAM_DOMAIN) is not configured for JWT signature verification.'
+    );
+  }
+  const issuer = `https://${normalizedDomain}`;
+  const certsUrl = `${issuer}/cdn-cgi/access/certs`;
+  let jwks = cfAccessJwksCache.get(certsUrl);
+  if (!jwks) {
+    jwks = createRemoteJWKSet(new URL(certsUrl));
+    cfAccessJwksCache.set(certsUrl, jwks);
+  }
+
+  try {
+    const { payload } = await jwtVerify(jwtAssertion, jwks, {
+      issuer,
+      audience: expectedAud,
+      clockTolerance: 5
+    });
+    return {
+      email: typeof payload.email === 'string' ? payload.email.toLowerCase() : undefined,
+      sub: typeof payload.sub === 'string' ? payload.sub : undefined
+    };
+  } catch {
+    throw new AuthorizationError('Invalid or expired Cloudflare Access perimeter JWT assertion.');
+  }
+}
+
+export async function verifyCloudflareAccessJwt(env: Env, request: Request): Promise<void> {
+  if (!env.CF_ACCESS_AUD) {
+    return;
+  }
+  const cfAccessJwt = request.headers.get('Cf-Access-Jwt-Assertion')?.trim();
+  if (!cfAccessJwt) {
+    throw new AuthorizationError('Missing Cloudflare Access perimeter assertion.');
+  }
+  const teamDomain = env.CF_ACCESS_TEAM_DOMAIN || '';
+  const verifier = customCfAccessVerifier ?? defaultCfAccessVerifier;
+  try {
+    await verifier(cfAccessJwt, teamDomain, env.CF_ACCESS_AUD.trim());
+  } catch (err) {
+    if (err instanceof AuthorizationError) {
+      throw err;
+    }
+    throw new AuthorizationError('Invalid or expired Cloudflare Access perimeter JWT assertion.');
+  }
+}
+
+export function resolveCookieDomain(env: Env, requestHostname?: string): string | undefined {
+  if (env.COOKIE_DOMAIN && env.COOKIE_DOMAIN.trim()) {
+    return env.COOKIE_DOMAIN.trim();
+  }
+  const host = (requestHostname || '').toLowerCase();
+  if (host === 'vatsom.in' || host.endsWith('.vatsom.in')) {
+    return 'vatsom.in';
+  }
+  return undefined;
+}
 
 export interface IssuedSessionBundle {
   sessionId: string;
@@ -28,7 +116,8 @@ export async function issueSession(
   customer: AuthenticatedUser,
   requestedScope: UserRole,
   ipHash: string,
-  userAgent: string
+  userAgent: string,
+  requestHostname?: string
 ): Promise<IssuedSessionBundle> {
   // Never issue an admin session unless the customer is an active admin AND in ADMIN_ALLOWLIST
   let effectiveScope: UserRole = 'customer';
@@ -77,14 +166,19 @@ export async function issueSession(
   );
 
   const sessionId = insertRes.rows[0]?.id ?? '';
-  const isSecure = env.ENVIRONMENT === 'production' || env.APP_ORIGIN?.startsWith('https://');
+  const isSecure =
+    env.ENVIRONMENT === 'production' ||
+    env.ENVIRONMENT === 'staging' ||
+    env.APP_ORIGIN?.startsWith('https://');
+  const cookieDomain = resolveCookieDomain(env, requestHostname);
 
   const sessionCookie = serializeCookie(SESSION_COOKIE_NAME, rawSessionToken, {
     maxAgeSeconds: ttlSeconds,
     httpOnly: true,
     secure: Boolean(isSecure),
     sameSite: effectiveScope === 'admin' ? 'Strict' : 'Lax',
-    path: '/'
+    path: '/',
+    domain: cookieDomain
   });
 
   // Readable CSRF cookie paired with session-bound CSRF hash verification
@@ -93,8 +187,32 @@ export async function issueSession(
     httpOnly: false,
     secure: Boolean(isSecure),
     sameSite: effectiveScope === 'admin' ? 'Strict' : 'Lax',
-    path: '/'
+    path: '/',
+    domain: cookieDomain
   });
+
+  const setCookieHeaders = [sessionCookie, csrfCookie];
+
+  if (effectiveScope === 'admin') {
+    setCookieHeaders.push(
+      serializeCookie(ADMIN_SESSION_COOKIE_NAME, rawSessionToken, {
+        maxAgeSeconds: ttlSeconds,
+        httpOnly: true,
+        secure: Boolean(isSecure),
+        sameSite: 'Strict',
+        path: '/',
+        domain: cookieDomain
+      }),
+      serializeCookie(ADMIN_CSRF_COOKIE_NAME, rawCsrfToken, {
+        maxAgeSeconds: ttlSeconds,
+        httpOnly: false,
+        secure: Boolean(isSecure),
+        sameSite: 'Strict',
+        path: '/',
+        domain: cookieDomain
+      })
+    );
+  }
 
   return {
     sessionId,
@@ -102,26 +220,48 @@ export async function issueSession(
     rawCsrfToken,
     expiresAt,
     sessionScope: effectiveScope,
-    setCookieHeaders: [sessionCookie, csrfCookie]
+    setCookieHeaders
   };
 }
 
-export function clearSessionCookies(env: Env): string[] {
-  const isSecure = env.ENVIRONMENT === 'production' || env.APP_ORIGIN?.startsWith('https://');
+export function clearSessionCookies(env: Env, requestHostname?: string): string[] {
+  const isSecure =
+    env.ENVIRONMENT === 'production' ||
+    env.ENVIRONMENT === 'staging' ||
+    env.APP_ORIGIN?.startsWith('https://');
+  const cookieDomain = resolveCookieDomain(env, requestHostname);
   return [
     serializeCookie(SESSION_COOKIE_NAME, '', {
       maxAgeSeconds: 0,
       httpOnly: true,
       secure: Boolean(isSecure),
       sameSite: 'Lax',
-      path: '/'
+      path: '/',
+      domain: cookieDomain
     }),
     serializeCookie(CSRF_COOKIE_NAME, '', {
       maxAgeSeconds: 0,
       httpOnly: false,
       secure: Boolean(isSecure),
       sameSite: 'Lax',
-      path: '/'
+      path: '/',
+      domain: cookieDomain
+    }),
+    serializeCookie(ADMIN_SESSION_COOKIE_NAME, '', {
+      maxAgeSeconds: 0,
+      httpOnly: true,
+      secure: Boolean(isSecure),
+      sameSite: 'Strict',
+      path: '/',
+      domain: cookieDomain
+    }),
+    serializeCookie(ADMIN_CSRF_COOKIE_NAME, '', {
+      maxAgeSeconds: 0,
+      httpOnly: false,
+      secure: Boolean(isSecure),
+      sameSite: 'Strict',
+      path: '/',
+      domain: cookieDomain
     })
   ];
 }
@@ -131,7 +271,16 @@ export async function resolveRequestSession(
   request: Request
 ): Promise<{ user: AuthenticatedUser | null; session: SessionInfo | null }> {
   const cookies = parseCookies(request.headers.get('cookie'));
-  const rawToken = cookies[SESSION_COOKIE_NAME];
+  const url = new URL(request.url);
+  const preferAdminCookie =
+    url.pathname.startsWith('/api/v1/admin') ||
+    url.hostname.toLowerCase().startsWith('admin.') ||
+    request.headers.get('x-vatsom-portal') === 'admin';
+
+  const rawToken = preferAdminCookie
+    ? cookies[ADMIN_SESSION_COOKIE_NAME] || cookies[SESSION_COOKIE_NAME]
+    : cookies[SESSION_COOKIE_NAME] || cookies[ADMIN_SESSION_COOKIE_NAME];
+
   if (!rawToken || rawToken.length < 32) {
     return { user: null, session: null };
   }
@@ -212,20 +361,36 @@ export async function resolveRequestSession(
   };
 }
 
+export async function resolveVerifiedCsrfCookie(
+  request: Request,
+  session: SessionInfo
+): Promise<string | undefined> {
+  const cookies = parseCookies(request.headers.get('cookie'));
+  const candidates = [cookies[ADMIN_CSRF_COOKIE_NAME], cookies[CSRF_COOKIE_NAME]].filter(
+    (c): c is string => Boolean(c && c.length >= 16)
+  );
+  for (const candidate of candidates) {
+    const hash = await sha256Hex(candidate);
+    if (timingSafeEqualStr(hash, session.csrfTokenHash)) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
 export async function verifyCsrfProtection(ctx: RequestContext): Promise<void> {
   const method = ctx.request.method.toUpperCase();
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
     return;
   }
 
-  // Validate Origin header if present (must match either configured APP_ORIGIN or the Worker's own origin)
-  const origin = ctx.request.headers.get('origin');
-  if (
-    origin &&
-    origin !== ctx.url.origin &&
-    (!ctx.env.APP_ORIGIN || origin !== ctx.env.APP_ORIGIN)
-  ) {
-    throw new CsrfError('Cross-origin state-changing request rejected.');
+  // Validate Origin header if present (must match either the Worker's own origin or one of the configured allowed origins)
+  const origin = ctx.request.headers.get('origin')?.trim().replace(/\/+$/, '');
+  if (origin) {
+    const allowedOrigins = getAllowedOrigins(ctx.env);
+    if (origin !== ctx.url.origin && !allowedOrigins.has(origin)) {
+      throw new CsrfError('Cross-origin state-changing request rejected.');
+    }
   }
 
   if (!ctx.session) {
@@ -278,13 +443,8 @@ export async function requireAuthenticatedAdmin(
     throw new AuthorizationError('Administrative privileges are required for this operation.');
   }
 
-  // Optional Cloudflare Access header verification as an additional perimeter when configured
-  if (ctx.env.CF_ACCESS_AUD) {
-    const cfAccessJwt = ctx.request.headers.get('Cf-Access-Jwt-Assertion');
-    if (!cfAccessJwt) {
-      throw new AuthorizationError('Missing Cloudflare Access perimeter assertion.');
-    }
-  }
+  // Cryptographic Cloudflare Access JWT verification when CF_ACCESS_AUD is configured
+  await verifyCloudflareAccessJwt(ctx.env, ctx.request);
 
   if (options?.requireCsrf !== false) {
     await verifyCsrfProtection(ctx);
