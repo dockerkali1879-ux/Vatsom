@@ -13,8 +13,12 @@ if (!fs.existsSync(publicDir)) {
 const filesToCopy = [
   'vatsom_premium_oils.html',
   'admin-portal.html',
+  'portfolio.html',
   'paper_crumple_effect.js',
-  'vatsom_logo.png'
+  'vatsom_logo.png',
+  'pratham_hero.jpg',
+  'pratham_portrait_crop.jpg',
+  'Pratham_Vatsa_Resume.pdf'
 ];
 
 for (const file of filesToCopy) {

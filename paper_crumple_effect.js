@@ -428,7 +428,11 @@
 
         ctx.fillStyle = 'rgba(18, 18, 18, 0.65)';
         ctx.font = 'italic 12px "Playfair Display", serif';
-        const sub = itemData ? `${itemData.volume}  •  $${itemData.price.toFixed(2)} each` : '';
+        const sub = itemData?.subtitle
+            ? String(itemData.subtitle)
+            : itemData && typeof itemData.price === 'number'
+            ? `${itemData.volume || ''}  •  $${itemData.price.toFixed(2)} each`
+            : String(itemData?.volume || '');
         ctx.fillText(sub, 14, height * 0.68);
 
         const boxW = 68;
@@ -443,7 +447,8 @@
         ctx.fillStyle = '#121212';
         ctx.font = 'bold 12px Cinzel, serif';
         ctx.textAlign = 'center';
-        ctx.fillText(`×${itemData?.quantity || 1}`, boxX + boxW / 2, height / 2);
+        const badgeText = itemData?.badge ? String(itemData.badge) : `×${itemData?.quantity || 1}`;
+        ctx.fillText(badgeText, boxX + boxW / 2, height / 2);
 
         ctx.strokeStyle = 'rgba(124, 29, 29, 0.45)';
         ctx.lineWidth = 1.5;

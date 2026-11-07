@@ -1,0 +1,2327 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pratham Vatsa — Interactive Executive Dossier & Portfolio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lenis Smooth Scroll -->
+    <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+    <!-- Three.js & Vatsom PaperCrumple 3D WebGL Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="paper_crumple_effect.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        obsidian: '#030303',
+                        charcoal: '#0b0b0b',
+                        paper: '#f4f1ea',
+                        paperDark: '#e5dec9',
+                        paperEdge: '#d6ccb2',
+                        accentGold: '#c5a059',
+                        goldBright: '#e5c67b',
+                        waxRed: '#7c1d1d',
+                        waxGlow: '#a82424'
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        };
+    </script>
+
+    <style>
+        /* Smooth Scroll & Base Setup */
+        html.lenis, html.lenis body {
+            height: auto;
+        }
+        .lenis.lenis-smooth {
+            scroll-behavior: auto !important;
+        }
+        .lenis.lenis-smooth [data-lenis-prevent] {
+            overscroll-behavior: contain;
+        }
+
+        :root {
+            --mouse-x: 50%;
+            --mouse-y: 50%;
+            --hero-x: 0px;
+            --hero-y: 0px;
+            --scroll-vel: 0;
+        }
+
+        body {
+            background-color: #000000;
+            color: #f4f1ea;
+            overflow-x: hidden;
+            selection-background-color: #c5a059;
+            selection-color: #121212;
+        }
+
+        ::selection {
+            background: rgba(197, 160, 89, 0.35);
+            color: #f4f1ea;
+        }
+
+        /* Cinematic Minimalistic Black Environment & Volumetric Glows */
+        .cinematic-void {
+            background:
+                radial-gradient(900px circle at calc(50% + var(--hero-x, 0px)) calc(38% + var(--hero-y, 0px)), rgba(197, 160, 89, 0.09), transparent 65%),
+                radial-gradient(650px circle at calc(44% - var(--hero-x, 0px)) calc(55% + var(--hero-y, 0px)), rgba(124, 29, 29, 0.08), transparent 60%),
+                #000000;
+        }
+
+        /* Subtle Film Grain Overlay */
+        .film-grain {
+            background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+
+        /* Hero Portrait Frame & Leg Blur Architecture */
+        .hero-portrait-stage {
+            position: relative;
+            width: min(92vw, 650px);
+            aspect-ratio: 825 / 1024;
+            margin: 0 auto;
+            user-select: none;
+        }
+
+        /* Seamless edge feathering so photo black merges 100% into page #000000 */
+        .hero-portrait-mask {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            -webkit-mask-image: radial-gradient(ellipse 88% 92% at 50% 48%, #000 68%, transparent 100%);
+            mask-image: radial-gradient(ellipse 88% 92% at 50% 48%, #000 68%, transparent 100%);
+        }
+
+        /* Base crisp image */
+        .hero-img-crisp {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            display: block;
+            transform: scale(1.01);
+            transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Blurred duplicate specifically over the legs (bottom 38% of frame) */
+        .hero-img-leg-blur {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            pointer-events: none;
+            filter: blur(18px) brightness(0.42) contrast(1.08) saturate(0.85);
+            transform: scale(1.04);
+            -webkit-mask-image: linear-gradient(
+                to bottom,
+                transparent 0%,
+                transparent 58%,
+                rgba(0, 0, 0, 0.35) 64%,
+                rgba(0, 0, 0, 0.85) 70%,
+                #000000 76%,
+                #000000 100%
+            );
+            mask-image: linear-gradient(
+                to bottom,
+                transparent 0%,
+                transparent 58%,
+                rgba(0, 0, 0, 0.35) 64%,
+                rgba(0, 0, 0, 0.85) 70%,
+                #000000 76%,
+                #000000 100%
+            );
+        }
+
+        /* Additional progressive frosted glass veil over legs */
+        .leg-frosted-veil {
+            position: absolute;
+            left: -4%;
+            right: -4%;
+            bottom: 0;
+            height: 41%;
+            pointer-events: none;
+            backdrop-filter: blur(16px) brightness(0.62);
+            -webkit-backdrop-filter: blur(16px) brightness(0.62);
+            background: linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0) 0%,
+                rgba(4, 4, 4, 0.48) 28%,
+                rgba(3, 3, 3, 0.78) 68%,
+                #000000 100%
+            );
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.6) 22%, #000 45%, #000 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.6) 22%, #000 45%, #000 100%);
+        }
+
+        /* Subtle Phone Screen Upward Glow on Face */
+        .phone-screen-glow {
+            position: absolute;
+            left: 43%;
+            top: 47%;
+            width: 16%;
+            height: 18%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(197, 160, 89, 0.22) 0%, rgba(197, 160, 89, 0.06) 45%, transparent 75%);
+            filter: blur(18px);
+            pointer-events: none;
+            animation: phonePulse 5s ease-in-out infinite;
+        }
+
+        @keyframes phonePulse {
+            0%, 100% { opacity: 0.65; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 1; transform: translate(-50%, -52%) scale(1.14); }
+        }
+
+        /* Tactile Ribbed Laid Paper Texture with Fibre Grain (Exact Vatsom Theme) */
+        .ribbed-paper {
+            background-color: #f4f1ea;
+            color: #121212;
+            background-image:
+                repeating-linear-gradient(90deg, rgba(255,255,255,0.35) 0px, rgba(255,255,255,0.35) 1px, transparent 1px, transparent 28px),
+                repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 3px),
+                linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px),
+                radial-gradient(ellipse at center, rgba(255,255,255,0.5) 0%, rgba(214,204,178,0.35) 100%);
+            background-size: 28px 100%, 100% 3px, 6px 100%, 100% 100%;
+            box-shadow:
+                0 1px 2px rgba(0,0,0,0.18),
+                0 18px 42px -8px rgba(0,0,0,0.75),
+                inset 0 0 0 1px rgba(255,255,255,0.6),
+                inset 0 -3px 8px rgba(180,165,135,0.25);
+        }
+
+        .ribbed-paper-dark {
+            background-color: #e5dec9;
+            color: #121212;
+            background-image:
+                repeating-linear-gradient(0deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 3px),
+                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 100% 3px, 5px 100%;
+        }
+
+        /* Obsidian Cinematic Card with subtle gold rim */
+        .obsidian-card {
+            background: linear-gradient(160deg, rgba(16, 15, 13, 0.92) 0%, rgba(7, 7, 7, 0.96) 100%);
+            border: 1px solid rgba(197, 160, 89, 0.22);
+            box-shadow:
+                0 20px 50px rgba(0, 0, 0, 0.85),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        .obsidian-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(500px circle at var(--card-mouse-x, 50%) var(--card-mouse-y, 50%), rgba(197, 160, 89, 0.11), transparent 55%);
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            pointer-events: none;
+        }
+        .obsidian-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Stacked Paper Sheet Edges Underneath */
+        .paper-stack {
+            position: relative;
+        }
+        .paper-stack::before,
+        .paper-stack::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: #e5dec9;
+            z-index: -1;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.55);
+        }
+        .paper-stack::before {
+            transform: translate(5px, 5px) rotate(0.55deg);
+        }
+        .paper-stack::after {
+            background-color: #d8ceb4;
+            transform: translate(-4px, 8px) rotate(-0.75deg);
+        }
+        .paper-stack:hover::before {
+            transform: translate(8px, 8px) rotate(1.2deg);
+        }
+        .paper-stack:hover::after {
+            transform: translate(-7px, 12px) rotate(-1.4deg);
+        }
+
+        /* Realistic Page Card 3D Tilt Physics */
+        .paper-card {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
+        }
+        .paper-card.is-hovering {
+            transition: transform 0.08s ease-out, box-shadow 0.25s ease-out !important;
+        }
+        .paper-card .paper-sheen {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(520px circle at var(--card-mouse-x, 50%) var(--card-mouse-y, 50%), rgba(255,255,255,0.48), transparent 55%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .paper-card:hover .paper-sheen {
+            opacity: 1;
+        }
+
+        /* Corner Curl Accent */
+        .paper-corner-curl {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 0px;
+            height: 0px;
+            background: linear-gradient(135deg, #d8ceb4 0%, #f4f1ea 48%, #c9bda0 50%, #1a1a1a 52%, #090909 100%);
+            box-shadow: -3px -3px 8px rgba(0,0,0,0.25);
+            transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 20;
+            pointer-events: none;
+        }
+        .paper-card:hover .paper-corner-curl {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Unrolling Parchment Scroll Rollers */
+        .parchment-roller {
+            height: 14px;
+            background: linear-gradient(180deg, #3a2e21 0%, #1f1812 50%, #0d0a07 100%);
+            border-top: 1px solid rgba(197, 160, 89, 0.5);
+            border-bottom: 1px solid rgba(197, 160, 89, 0.28);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.85);
+            position: relative;
+        }
+        .parchment-roller::before,
+        .parchment-roller::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            width: 14px;
+            height: 18px;
+            background: linear-gradient(180deg, #e5c67b 0%, #c5a059 50%, #7d6029 100%);
+            border-radius: 2px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.7);
+        }
+        .parchment-roller::before { left: -8px; }
+        .parchment-roller::after { right: -8px; }
+
+        /* 3D Paper Unfold Scroll Reveal */
+        .paper-unfold {
+            opacity: 0;
+            transform-origin: top center;
+            transform: perspective(1400px) rotateX(-20deg) translateY(36px) scale(0.97);
+            transition:
+                opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform, opacity;
+        }
+        .paper-unfold.is-visible {
+            opacity: 1;
+            transform: perspective(1400px) rotateX(0deg) translateY(0px) scale(1);
+        }
+
+        /* Wax Seal Pulse */
+        @keyframes sealPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(124, 29, 29, 0.55), 0 0 25px rgba(197, 160, 89, 0.25); }
+            50% { box-shadow: 0 0 0 10px rgba(124, 29, 29, 0), 0 0 38px rgba(197, 160, 89, 0.45); }
+        }
+        .wax-seal-pulse {
+            animation: sealPulse 3s infinite;
+        }
+
+        /* Cinematic Ambient Glow Orbs */
+        @keyframes slowFloat {
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+            50% { transform: translate3d(18px, -16px, 0) scale(1.06); }
+        }
+        .ambient-orb {
+            animation: slowFloat 11s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        /* Custom Range Slider in Vatsom Gold */
+        input[type="range"].vatsom-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 5px;
+            background: rgba(18, 18, 18, 0.2);
+            outline: none;
+            border-radius: 2px;
+        }
+        input[type="range"].vatsom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #7c1d1d;
+            border: 2px solid #c5a059;
+            transform: rotate(45deg);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+        input[type="range"].vatsom-slider::-webkit-slider-thumb:hover {
+            transform: rotate(45deg) scale(1.18);
+            background: #991b1b;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2c2417;
+            border: 1px solid rgba(197, 160, 89, 0.35);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c5a059;
+        }
+    </style>
+</head>
+<body class="cinematic-void film-grain antialiased selection:bg-accentGold/30">
+
+    <!-- Ambient Dust Motes Canvas (Fixed Cinematic Background) -->
+    <canvas id="cinematic-dust-canvas" class="fixed inset-0 pointer-events-none z-0 opacity-70"></canvas>
+
+    <!-- ===================================================================== -->
+    <!-- FLOATING OBSIDIAN & PARCHMENT NAVIGATION BAR                          -->
+    <!-- ===================================================================== -->
+    <header class="fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-black/75 backdrop-blur-xl border-b border-accentGold/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
+            <!-- Brand / Monogram -->
+            <a href="#hero-stage" class="flex items-center gap-3 group">
+                <div class="w-9 h-9 border border-accentGold/60 bg-charcoal flex items-center justify-center relative overflow-hidden">
+                    <span class="font-cinzel font-bold text-sm tracking-widest text-accentGold group-hover:scale-110 transition-transform">PV</span>
+                    <div class="absolute inset-0 bg-accentGold/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </div>
+                <div>
+                    <span class="font-cinzel text-xs sm:text-sm tracking-[0.26em] text-paper block font-semibold">PRATHAM VATSA</span>
+                    <span class="font-serif italic text-[11px] text-accentGold/80 hidden sm:block">Founder • Operations • Supply Chain</span>
+                </div>
+            </a>
+
+            <!-- Quick Section Jump Pills -->
+            <nav class="hidden lg:flex items-center gap-1 bg-white/[0.03] border border-accentGold/20 p-1">
+                <a href="#dossier-section" class="nav-pill px-3 py-1.5 font-cinzel text-[10px] tracking-[0.2em] text-paper/75 hover:text-accentGold transition-colors">01. DOSSIER</a>
+                <a href="#experience-ledger" class="nav-pill px-3 py-1.5 font-cinzel text-[10px] tracking-[0.2em] text-paper/75 hover:text-accentGold transition-colors">02. LEDGER</a>
+                <a href="#sourcing-simulator" class="nav-pill px-3 py-1.5 font-cinzel text-[10px] tracking-[0.2em] text-paper/75 hover:text-accentGold transition-colors">03. SOURCING LAB</a>
+                <a href="#skills-matrix" class="nav-pill px-3 py-1.5 font-cinzel text-[10px] tracking-[0.2em] text-paper/75 hover:text-accentGold transition-colors">04. ARSENAL</a>
+                <a href="#architecture-case" class="nav-pill px-3 py-1.5 font-cinzel text-[10px] tracking-[0.2em] text-paper/75 hover:text-accentGold transition-colors">05. VATSOM ENGINE</a>
+                <a href="#sonic-atelier" class="nav-pill px-3 py-1.5 font-cinzel text-[10px] tracking-[0.2em] text-paper/75 hover:text-accentGold transition-colors">06. BEYOND</a>
+            </nav>
+
+            <!-- Interactive Controls: Sound FX, Restore Slips, Resume PDF -->
+            <div class="flex items-center gap-2.5">
+                <button id="sound-toggle-btn" onclick="toggleTactileAudio()" class="px-2.5 py-1.5 border border-accentGold/30 bg-charcoal/90 hover:border-accentGold text-[10px] font-cinzel tracking-[0.18em] text-accentGold flex items-center gap-1.5 transition-all" title="Toggle Tactile Paper & Synth Sound FX">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-[10px]"></i>
+                    <span id="sound-label" class="hidden sm:inline">FX: ON</span>
+                </button>
+
+                <button onclick="restoreAllCrumpledSlips()" class="px-2.5 py-1.5 border border-accentGold/30 bg-charcoal/90 hover:border-accentGold text-[10px] font-cinzel tracking-[0.18em] text-paper/85 hover:text-accentGold flex items-center gap-1.5 transition-all" title="Restore any 3D-crumpled parchment slips">
+                    <i class="fa-solid fa-rotate-left text-[10px] text-accentGold"></i>
+                    <span class="hidden md:inline">RESTORE SLIPS</span>
+                    <span id="crumpled-counter-badge" class="hidden px-1.5 py-0.2 bg-waxRed text-paper text-[9px] font-mono rounded-sm">0</span>
+                </button>
+
+                <a href="Pratham_Vatsa_Resume.pdf" download="Pratham_Vatsa_Resume.pdf" class="px-3 py-1.5 ribbed-paper text-charcoal font-cinzel font-bold text-[10px] tracking-[0.2em] hover:bg-accentGold transition-all flex items-center gap-1.5 shadow-lg">
+                    <i class="fa-solid fa-file-arrow-down text-waxRed"></i>
+                    <span>PDF CV</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- HERO STAGE: MINIMALISTIC BLACK + PORTRAIT + BLURRED LEGS CTA          -->
+    <!-- ===================================================================== -->
+    <section id="hero-stage" class="relative min-h-screen pt-16 pb-12 flex flex-col items-center justify-center overflow-hidden">
+
+        <!-- Cinematic Volumetric Background Light Halos -->
+        <div class="ambient-orb absolute top-[14%] left-[18%] w-[340px] h-[340px] rounded-full bg-accentGold/[0.07] blur-[110px]"></div>
+        <div class="ambient-orb absolute bottom-[18%] right-[16%] w-[380px] h-[380px] rounded-full bg-waxRed/[0.08] blur-[130px]" style="animation-delay: -4s;"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[640px] rounded-full bg-accentGold/[0.04] blur-[140px] pointer-events-none"></div>
+
+        <!-- Subtle Left & Right Editorial Coordinates (Desktop) -->
+        <div class="hidden xl:flex flex-col justify-between fixed left-7 top-1/2 -translate-y-1/2 h-72 z-20 pointer-events-none text-paper/35 font-mono text-[10px] tracking-[0.25em]">
+            <span class=" [writing-mode:vertical-rl] rotate-180">30.3165° N, 78.0322° E — DEHRADUN / NCR</span>
+            <div class="w-[1px] h-16 bg-gradient-to-b from-accentGold/40 to-transparent mx-auto"></div>
+            <span class="[writing-mode:vertical-rl] rotate-180 text-accentGold/60">FOLIO EDITION • MMXXVI</span>
+        </div>
+
+        <!-- Top Minimalist Crown Header above Portrait -->
+        <div class="relative z-20 text-center px-4 mb-2 sm:mb-0 pointer-events-none">
+            <div class="inline-flex items-center gap-2.5 px-3.5 py-1 border border-accentGold/25 bg-white/[0.02] backdrop-blur-sm mb-3">
+                <span class="w-1.5 h-1.5 rotate-45 bg-accentGold animate-pulse"></span>
+                <span class="font-cinzel text-[10px] tracking-[0.34em] text-accentGold uppercase">Executive Operations & Sourcing Portfolio</span>
+                <span class="w-1.5 h-1.5 rotate-45 bg-accentGold animate-pulse"></span>
+            </div>
+        </div>
+
+        <!-- CENTERPIECE PORTRAIT STAGE WITH PROGRESSIVE LEG BLUR & OVERLAID CTA -->
+        <div class="hero-portrait-stage z-10" id="hero-interactive-frame">
+            <div class="hero-portrait-mask" id="hero-mask-container">
+                <!-- 1. Base Razor-Sharp Portrait (Face, Glasses, Phone, Red Bracelet) -->
+                <img src="pratham_hero.jpg" alt="Pratham Vatsa" class="hero-img-crisp" id="hero-base-img">
+
+                <!-- 2. Subtle Upward Phone Glow on Face -->
+                <div class="phone-screen-glow"></div>
+
+                <!-- 3. Synchronized Gaussian-Blurred Duplicate masking ONLY the legs (bottom 38%) -->
+                <img src="pratham_hero.jpg" alt="" aria-hidden="true" class="hero-img-leg-blur">
+
+                <!-- 4. Progressive Frosted Obsidian Veil hiding the legs in a smooth cinematic blur -->
+                <div class="leg-frosted-veil"></div>
+
+                <!-- 5. Fine Gold Horizon Hairline at the top of the leg blur zone -->
+                <div class="absolute inset-x-10 bottom-[35%] h-[1px] bg-gradient-to-r from-transparent via-accentGold/35 to-transparent pointer-events-none"></div>
+            </div>
+
+            <!-- Floating Interactive HUD Callouts around Pratham (Desktop) -->
+            <button onclick="scrollToSection('#architecture-case')" class="hidden md:flex items-center gap-3 absolute left-[-110px] top-[44%] px-3.5 py-2 obsidian-card border-accentGold/30 hover:border-accentGold group transition-all duration-300 hover:-translate-y-0.5 text-left z-20">
+                <div class="w-2 h-2 rotate-45 bg-accentGold group-hover:scale-125 transition-transform"></div>
+                <div>
+                    <span class="font-cinzel text-[9px] tracking-[0.24em] text-accentGold block">FOUNDER & ARCHITECT</span>
+                    <span class="font-serif italic text-xs text-paper/90">vatsom.in • Live Commerce</span>
+                </div>
+            </button>
+
+            <button onclick="scrollToSection('#sourcing-simulator')" class="hidden md:flex items-center gap-3 absolute right-[-125px] top-[52%] px-3.5 py-2 obsidian-card border-accentGold/30 hover:border-accentGold group transition-all duration-300 hover:-translate-y-0.5 text-left z-20">
+                <div>
+                    <span class="font-cinzel text-[9px] tracking-[0.24em] text-accentGold block">SUPPLY CHAIN & ANALYTICS</span>
+                    <span class="font-serif italic text-xs text-paper/90">SQL • Python • Strategic Sourcing</span>
+                </div>
+                <div class="w-2 h-2 rotate-45 bg-waxRed group-hover:scale-125 transition-transform"></div>
+            </button>
+
+            <!-- =============================================================== -->
+            <!-- INTERACTIVE PORTFOLIO BUTTON ASSEMBLY PLACED RIGHT OVER LEGS    -->
+            <!-- =============================================================== -->
+            <div class="absolute inset-x-0 bottom-[3%] sm:bottom-[5%] z-30 flex flex-col items-center px-4">
+
+                <!-- Name & Title Floating in the Upper Blur Transition over the Legs -->
+                <div class="text-center mb-3.5 pointer-events-none">
+                    <h1 class="font-cinzel font-bold text-2xl sm:text-4xl md:text-5xl tracking-[0.18em] text-paper drop-shadow-[0_6px_24px_rgba(0,0,0,0.95)]">
+                        PRATHAM VATSA
+                    </h1>
+                    <p class="font-serif italic text-xs sm:text-base text-accentGold/95 tracking-wide mt-1 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
+                        Founder &nbsp;•&nbsp; Business Operations &nbsp;•&nbsp; Procurement &amp; Supply Chain
+                    </p>
+                </div>
+
+                <!-- Interactive Parchment Seal Slip resting over the blurred legs -->
+                <!-- Clicking this button physically 3D-crumples the seal slip via PaperCrumpleEffect and scrolls into the portfolio! -->
+                <div id="hero-leg-seal-card" class="w-full max-w-md ribbed-paper p-3.5 sm:p-4 border border-accentGold shadow-[0_20px_60px_rgba(0,0,0,0.95)] relative group cursor-pointer transition-transform duration-300 hover:scale-[1.015]" onclick="unsealPortfolioWithCrumple(event)">
+                    <!-- Decorative Corner Ticks -->
+                    <div class="absolute top-1 left-1 w-2.5 h-2.5 border-t border-l border-charcoal/40"></div>
+                    <div class="absolute top-1 right-1 w-2.5 h-2.5 border-t border-r border-charcoal/40"></div>
+                    <div class="absolute bottom-1 left-1 w-2.5 h-2.5 border-b border-l border-charcoal/40"></div>
+                    <div class="absolute bottom-1 right-1 w-2.5 h-2.5 border-b border-r border-charcoal/40"></div>
+
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="text-left">
+                            <div class="flex items-center gap-2">
+                                <span class="px-1.5 py-0.5 bg-charcoal text-accentGold font-cinzel text-[9px] tracking-[0.22em]">SEALED DOSSIER</span>
+                                <span class="font-mono text-[10px] text-charcoal/60">CLICK TO CRUMPLE SEAL</span>
+                            </div>
+                            <div class="font-cinzel font-bold text-sm sm:text-base tracking-[0.16em] text-charcoal mt-1 flex items-center gap-2">
+                                <span>VIEW PORTFOLIO</span>
+                                <i class="fa-solid fa-arrow-down-long text-waxRed text-xs group-hover:translate-y-1 transition-transform"></i>
+                            </div>
+                            <div class="font-serif italic text-[11px] text-charcoal/75">
+                                Interactive Operations Ledger, Sourcing Simulator &amp; Case Studies
+                            </div>
+                        </div>
+
+                        <!-- Wax Seal Button Right Over the Legs -->
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-waxRed border-2 border-accentGold flex flex-col items-center justify-center text-paper shrink-0 wax-seal-pulse group-hover:rotate-12 transition-transform">
+                            <i class="fa-solid fa-stamp text-sm text-accentGold"></i>
+                            <span class="font-cinzel text-[7px] tracking-[0.18em] mt-0.5">UNSEAL</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Secondary Pill once seal is crumpled or for direct jump -->
+                <div class="flex items-center gap-4 mt-3">
+                    <button onclick="scrollToSection('#dossier-section')" class="px-4 py-1.5 bg-black/80 hover:bg-accentGold/20 border border-accentGold/40 text-accentGold font-cinzel text-[10px] tracking-[0.26em] uppercase backdrop-blur-md transition-all flex items-center gap-2">
+                        <span>ENTER ARCHIVE</span>
+                        <i class="fa-solid fa-chevron-down text-[9px]"></i>
+                    </button>
+                    <button onclick="reSealHeroButton()" id="reseal-hero-btn" class="hidden px-3 py-1.5 bg-charcoal/90 hover:bg-white/10 border border-paper/20 text-paper/70 font-cinzel text-[9px] tracking-[0.2em] uppercase transition-all">
+                        <i class="fa-solid fa-wand-magic-sparkles text-accentGold mr-1"></i> RESTORE SEAL SLIP
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- CHAPTER 01: EXECUTIVE DOSSIER & ROLE LENS SWITCHER (RIBBED PARCHMENT) -->
+    <!-- ===================================================================== -->
+    <section id="dossier-section" class="relative z-20 max-w-6xl mx-auto px-4 sm:px-8 pt-8 pb-20">
+
+        <!-- Section Header -->
+        <div class="text-center mb-8">
+            <span class="font-cinzel text-[11px] tracking-[0.35em] text-accentGold uppercase block">CHAPTER I • EXECUTIVE SUMMARY</span>
+            <h2 class="font-cinzel font-bold text-2xl sm:text-4xl tracking-[0.14em] text-paper mt-1">THE FOUNDER'S DOSSIER</h2>
+            <div class="w-24 h-[1px] bg-gradient-to-r from-transparent via-accentGold to-transparent mx-auto mt-3"></div>
+        </div>
+
+        <!-- Interactive Role Positioning Lens Bar -->
+        <div class="flex flex-wrap items-center justify-center gap-2 mb-8">
+            <span class="font-serif italic text-xs text-paper/60 mr-2">Select Executive Lens:</span>
+            <button onclick="setExecutiveLens('all')" data-lens="all" class="lens-btn active-lens px-4 py-2 font-cinzel text-[10px] tracking-[0.2em] border border-accentGold bg-accentGold text-charcoal font-bold transition-all">
+                ALL PILLARS
+            </button>
+            <button onclick="setExecutiveLens('founder')" data-lens="founder" class="lens-btn px-4 py-2 font-cinzel text-[10px] tracking-[0.2em] border border-accentGold/35 bg-charcoal/80 text-paper/80 hover:border-accentGold transition-all">
+                FOUNDER &amp; GTM
+            </button>
+            <button onclick="setExecutiveLens('procurement')" data-lens="procurement" class="lens-btn px-4 py-2 font-cinzel text-[10px] tracking-[0.2em] border border-accentGold/35 bg-charcoal/80 text-paper/80 hover:border-accentGold transition-all">
+                PROCUREMENT &amp; SUPPLY CHAIN
+            </button>
+            <button onclick="setExecutiveLens('analytics')" data-lens="analytics" class="lens-btn px-4 py-2 font-cinzel text-[10px] tracking-[0.2em] border border-accentGold/35 bg-charcoal/80 text-paper/80 hover:border-accentGold transition-all">
+                SQL / PYTHON ANALYTICS
+            </button>
+        </div>
+
+        <!-- Unrolling Ribbed Parchment Dossier Sheet -->
+        <div class="paper-unfold is-visible">
+            <div class="parchment-roller mx-2"></div>
+            <div class="paper-stack">
+                <div class="ribbed-paper paper-card p-6 sm:p-10 md:p-12 border-x border-charcoal/20 relative">
+                    <div class="paper-sheen"></div>
+                    <div class="paper-corner-curl"></div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative z-10">
+
+                        <!-- Left Column: Framed Portrait & Direct Interactive Contact Channels -->
+                        <div class="lg:col-span-4 bg-charcoal text-paper p-6 border border-accentGold/60 shadow-xl relative">
+                            <div class="flex items-center gap-4 mb-5">
+                                <div class="w-16 h-20 border border-accentGold p-0.5 bg-black shrink-0 overflow-hidden">
+                                    <img src="pratham_portrait_crop.jpg" alt="Pratham Vatsa" class="w-full h-full object-cover">
+                                </div>
+                                <div>
+                                    <span class="font-cinzel text-[9px] tracking-[0.26em] text-accentGold block">VERIFIED PRINCIPAL</span>
+                                    <h3 class="font-cinzel font-bold text-lg tracking-wider text-paper">PRATHAM VATSA</h3>
+                                    <span class="font-serif italic text-xs text-paper/75">BBA (Marketing) • UPES</span>
+                                </div>
+                            </div>
+
+                            <div class="text-[10px] font-cinzel tracking-[0.22em] text-accentGold border-b border-accentGold/30 pb-1.5 mb-3">
+                                DIRECT DISPATCH CHANNELS (CLICK TO COPY)
+                            </div>
+
+                            <div class="space-y-2.5 text-xs">
+                                <button onclick="copyContact('+91 9999930048', 'Phone Number')" class="w-full text-left p-2 bg-white/[0.03] hover:bg-accentGold/15 border border-white/10 hover:border-accentGold/50 transition-all flex items-center justify-between group">
+                                    <div>
+                                        <span class="font-cinzel text-[9px] tracking-[0.2em] text-accentGold block">TELEPHONE</span>
+                                        <span class="font-mono text-paper/90">+91 9999930048</span>
+                                    </div>
+                                    <i class="fa-regular fa-copy text-paper/40 group-hover:text-accentGold"></i>
+                                </button>
+
+                                <button onclick="copyContact('pratham1879@gmail.com', 'Email Address')" class="w-full text-left p-2 bg-white/[0.03] hover:bg-accentGold/15 border border-white/10 hover:border-accentGold/50 transition-all flex items-center justify-between group">
+                                    <div>
+                                        <span class="font-cinzel text-[9px] tracking-[0.2em] text-accentGold block">ELECTRONIC MAIL</span>
+                                        <span class="font-mono text-paper/90">pratham1879@gmail.com</span>
+                                    </div>
+                                    <i class="fa-regular fa-copy text-paper/40 group-hover:text-accentGold"></i>
+                                </button>
+
+                                <a href="https://vatsom.in" target="_blank" rel="noopener" class="w-full text-left p-2 bg-white/[0.03] hover:bg-accentGold/15 border border-white/10 hover:border-accentGold/50 transition-all flex items-center justify-between group block">
+                                    <div>
+                                        <span class="font-cinzel text-[9px] tracking-[0.2em] text-accentGold block">LIVE PRODUCTION VENTURE</span>
+                                        <span class="font-mono text-paper/90">https://vatsom.in</span>
+                                    </div>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-paper/40 group-hover:text-accentGold text-xs"></i>
+                                </a>
+
+                                <div class="p-2 bg-white/[0.02] border border-white/5 flex items-center justify-between">
+                                    <div>
+                                        <span class="font-cinzel text-[9px] tracking-[0.2em] text-accentGold block">BASE OF OPERATIONS</span>
+                                        <span class="text-paper/85">Dehradun / Delhi NCR, India</span>
+                                    </div>
+                                    <i class="fa-solid fa-location-dot text-waxRed"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Dynamic Narrative & Interactive KPI Counters -->
+                        <div class="lg:col-span-8">
+                            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-charcoal/20 pb-3 mb-4">
+                                <div>
+                                    <span id="lens-badge" class="px-2.5 py-0.5 bg-waxRed text-paper font-cinzel text-[9px] tracking-[0.24em] uppercase">
+                                        POSITIONING: FOUNDER &amp; OPERATIONS ANALYST
+                                    </span>
+                                    <h3 id="lens-headline" class="font-cinzel font-bold text-xl sm:text-2xl text-charcoal tracking-wide mt-1.5">
+                                        Founder with Hands-On Business Operations, Sourcing, Analytics &amp; Digital Commerce Experience
+                                    </h3>
+                                </div>
+                            </div>
+
+                            <p id="lens-summary" class="font-sans text-sm sm:text-base leading-relaxed text-charcoal/90 mb-6">
+                                BBA graduate specializing in Marketing with hands-on experience in <strong class="text-waxRed font-semibold">business operations, e-commerce management, branding, vendor coordination, and analytics</strong>. Founder of <strong class="text-charcoal font-bold underline decoration-accentGold decoration-2">Vatsom</strong>, a premium edible and aromatic oils brand, where I lead product sourcing, business strategy, website operations, and go-to-market execution. Strong foundation in <strong class="text-waxRed font-semibold">Excel, SQL, Python (Pandas), and data analysis</strong>, with a core focus on procurement, supply chain management, and strategic sourcing.
+                            </p>
+
+                            <!-- Interactive Competency Meter Bars (Respond to Lens Switcher) -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6" id="competency-bars-container">
+                                <!-- Populated & animated by JS -->
+                            </div>
+
+                            <!-- Interactive Quick-Action Strip inside Dossier -->
+                            <div class="ribbed-paper-dark p-4 border border-charcoal/20 flex flex-wrap items-center justify-between gap-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 bg-charcoal text-accentGold flex items-center justify-center font-cinzel font-bold text-xs shrink-0">
+                                        3D
+                                    </div>
+                                    <div>
+                                        <span class="font-cinzel font-bold text-xs tracking-wider text-charcoal block">INTERACTIVE PAPER CRUMPLE PHYSICS ACTIVE</span>
+                                        <span class="font-serif italic text-xs text-charcoal/75">Every experience slip &amp; memo below can be inspected or physically crumpled in 3D WebGL.</span>
+                                    </div>
+                                </div>
+                                <button onclick="scrollToSection('#experience-ledger')" class="px-4 py-2 bg-charcoal text-accentGold hover:bg-waxRed hover:text-paper font-cinzel text-[10px] tracking-[0.22em] transition-colors">
+                                    TEST CRUMPLE LEDGER →
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="parchment-roller mx-2"></div>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- CHAPTER 02: INTERACTIVE EXPERIENCE & CRUMPLE LEDGER                   -->
+    <!-- ===================================================================== -->
+    <section id="experience-ledger" class="relative z-20 max-w-6xl mx-auto px-4 sm:px-8 py-16">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+            <div>
+                <span class="font-cinzel text-[11px] tracking-[0.35em] text-accentGold uppercase block">CHAPTER II • THE OPERATIONS LEDGER</span>
+                <h2 class="font-cinzel font-bold text-2xl sm:text-4xl tracking-[0.14em] text-paper mt-1">EXPERIENCE &amp; LEADERSHIP SLIPS</h2>
+                <p class="font-serif italic text-sm text-paper/65 mt-1">
+                    Click any parchment slip to expand its operational blueprint — or click <span class="text-accentGold">"Crumple Slip"</span> to trigger the 3D WebGL paper crumple physics.
+                </p>
+            </div>
+            <div class="flex items-center gap-2.5">
+                <button onclick="crumpleRandomSlip()" class="px-3.5 py-2 border border-waxRed bg-waxRed/20 hover:bg-waxRed text-paper font-cinzel text-[10px] tracking-[0.2em] transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-hand-fist text-accentGold"></i>
+                    <span>CRUMPLE DEMO SLIP</span>
+                </button>
+                <button onclick="restoreAllCrumpledSlips()" class="px-3.5 py-2 border border-accentGold/50 bg-charcoal hover:bg-accentGold hover:text-charcoal text-accentGold font-cinzel text-[10px] tracking-[0.2em] transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>RESTORE ALL</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Experience Parchment Slips List -->
+        <div id="experience-slips-container" class="space-y-6">
+            <!-- Dynamically rendered & re-renderable for 3D crumple/restore -->
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- INTERACTIVE CUSTOM DISPATCH SCRATCHPAD (WRITE & 3D CRUMPLE)       -->
+        <!-- ================================================================= -->
+        <div class="mt-12 obsidian-card p-6 sm:p-8 border border-accentGold/30">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-accentGold/20 mb-5">
+                <div>
+                    <span class="font-cinzel text-[10px] tracking-[0.28em] text-accentGold uppercase">INTERACTIVE SANDBOX • THE FOUNDER'S DESK</span>
+                    <h3 class="font-cinzel font-bold text-lg tracking-wider text-paper mt-0.5">DRAFT &amp; CRUMPLE A CUSTOM PARCHMENT MEMO</h3>
+                </div>
+                <span class="font-mono text-[11px] text-paper/50">Powered by Three.js Pre-Baked Vertex Physics</span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <div class="lg:col-span-5 space-y-3">
+                    <label class="block font-cinzel text-[10px] tracking-[0.2em] text-accentGold">MEMO SUBJECT / OPERATION TITLE</label>
+                    <input id="custom-slip-title" type="text" value="Q4 Cold-Pressed Sesame Batch Audit" maxlength="44" class="w-full px-3.5 py-2.5 bg-black/80 border border-accentGold/35 text-paper font-sans text-sm focus:outline-none focus:border-accentGold">
+
+                    <label class="block font-cinzel text-[10px] tracking-[0.2em] text-accentGold">VENDOR / SOURCING NOTE</label>
+                    <input id="custom-slip-sub" type="text" value="Supplier Tier-1 • Margin Target: 64% • Verified" maxlength="56" class="w-full px-3.5 py-2.5 bg-black/80 border border-accentGold/35 text-paper font-serif italic text-sm focus:outline-none focus:border-accentGold">
+
+                    <div class="flex gap-2 pt-1">
+                        <button onclick="spawnCustomSlip()" class="flex-1 py-2.5 bg-accentGold text-charcoal font-cinzel font-bold text-[10px] tracking-[0.22em] hover:bg-goldBright transition-all">
+                            + STAMP ONTO PARCHMENT
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Parchment Slip Preview Area -->
+                <div class="lg:col-span-7" id="custom-slips-stage">
+                    <div id="custom-memo-slip-1" class="ribbed-paper p-5 border border-charcoal/25 flex items-center justify-between gap-4 shadow-xl">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 bg-charcoal text-accentGold font-cinzel text-[9px] tracking-[0.2em]">DESK MEMO #01</span>
+                                <span class="font-mono text-[10px] text-waxRed font-semibold">READY TO CRUMPLE</span>
+                            </div>
+                            <h4 class="font-cinzel font-bold text-base text-charcoal mt-1">Q4 Cold-Pressed Sesame Batch Audit</h4>
+                            <p class="font-serif italic text-xs text-charcoal/75">Supplier Tier-1 • Margin Target: 64% • Verified</p>
+                        </div>
+                        <button onclick="crumpleCustomMemo('custom-memo-slip-1', 'Q4 Cold-Pressed Sesame Batch Audit', 'Supplier Tier-1 • Margin Target: 64%', 'MEMO')" class="px-3.5 py-2 bg-waxRed hover:bg-charcoal text-paper font-cinzel text-[10px] tracking-[0.2em] transition-colors shrink-0 flex items-center gap-1.5">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>CRUMPLE 3D</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- CHAPTER 03: INTERACTIVE PROCUREMENT & UNIT ECONOMICS SIMULATOR        -->
+    <!-- ===================================================================== -->
+    <section id="sourcing-simulator" class="relative z-20 max-w-6xl mx-auto px-4 sm:px-8 py-16">
+        <div class="text-center mb-10">
+            <span class="font-cinzel text-[11px] tracking-[0.35em] text-accentGold uppercase block">CHAPTER III • INTERACTIVE OPERATIONS MODEL</span>
+            <h2 class="font-cinzel font-bold text-2xl sm:text-4xl tracking-[0.14em] text-paper mt-1">PROCUREMENT &amp; UNIT ECONOMICS LAB</h2>
+            <p class="font-serif italic text-sm text-paper/65 mt-1 max-w-2xl mx-auto">
+                Simulating the live sourcing, EOQ (Economic Order Quantity), and fulfillment margin models Pratham engineered for <strong class="text-accentGold">Vatsom</strong> &amp; <strong class="text-accentGold">Pratham Enterprises</strong>.
+            </p>
+        </div>
+
+        <div class="parchment-roller mx-2"></div>
+        <div class="paper-stack">
+            <div class="ribbed-paper p-6 sm:p-10 border-x border-charcoal/20">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+
+                    <!-- Interactive Sliders & Sourcing Inputs -->
+                    <div class="lg:col-span-6 space-y-5 pr-0 lg:pr-4 border-b lg:border-b-0 lg:border-r border-charcoal/20 pb-6 lg:pb-0">
+                        <div class="flex items-center justify-between">
+                            <span class="font-cinzel font-bold text-xs tracking-[0.2em] text-waxRed uppercase">BOTANICAL SKU &amp; BATCH PARAMETERS</span>
+                            <button onclick="resetSimulator()" class="font-cinzel text-[10px] tracking-[0.18em] text-charcoal/60 hover:text-waxRed underline">RESET DEFAULTS</button>
+                        </div>
+
+                        <!-- SKU Selector -->
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="selectSimSku('almond', 1450, 420)" id="sku-almond" class="sim-sku-btn p-2.5 border border-charcoal bg-charcoal text-accentGold font-cinzel text-[10px] tracking-wider text-center transition-all">
+                                SWEET ALMOND<br><span class="font-mono text-[9px] opacity-80">₹1,450 Retail</span>
+                            </button>
+                            <button onclick="selectSimSku('sesame', 980, 290)" id="sku-sesame" class="sim-sku-btn p-2.5 border border-charcoal/25 bg-paperDark/60 text-charcoal font-cinzel text-[10px] tracking-wider text-center hover:border-charcoal transition-all">
+                                BLACK SESAME<br><span class="font-mono text-[9px] opacity-75">₹980 Retail</span>
+                            </button>
+                            <button onclick="selectSimSku('rosemary', 1850, 510)" id="sku-rosemary" class="sim-sku-btn p-2.5 border border-charcoal/25 bg-paperDark/60 text-charcoal font-cinzel text-[10px] tracking-wider text-center hover:border-charcoal transition-all">
+                                ROSEMARY ELIXIR<br><span class="font-mono text-[9px] opacity-75">₹1,850 Retail</span>
+                            </button>
+                        </div>
+
+                        <!-- Slider 1: Procurement Batch Size -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1.5">
+                                <span class="font-cinzel font-bold tracking-wider text-charcoal">PROCUREMENT BATCH VOLUME</span>
+                                <span id="sim-vol-label" class="font-mono font-bold text-waxRed">500 Units</span>
+                            </div>
+                            <input id="sim-vol" type="range" min="100" max="2500" step="50" value="500" oninput="updateSimulator()" class="vatsom-slider">
+                            <div class="flex justify-between text-[10px] font-serif italic text-charcoal/60 mt-1">
+                                <span>Pilot Batch (100)</span>
+                                <span>Tier-1 Bulk Discount (&gt;1,000)</span>
+                                <span>Scale Run (2,500)</span>
+                            </div>
+                        </div>
+
+                        <!-- Slider 2: Supplier Packaging & Cold-Press Efficiency -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1.5">
+                                <span class="font-cinzel font-bold tracking-wider text-charcoal">SUPPLIER NEGOTIATION &amp; YIELD EFFICIENCY</span>
+                                <span id="sim-eff-label" class="font-mono font-bold text-waxRed">+12% Optimization</span>
+                            </div>
+                            <input id="sim-eff" type="range" min="0" max="25" step="1" value="12" oninput="updateSimulator()" class="vatsom-slider">
+                        </div>
+
+                        <!-- Slider 3: COD vs Prepaid Fulfillment Share -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1.5">
+                                <span class="font-cinzel font-bold tracking-wider text-charcoal">COD RTO / LOGISTICS BUFFER</span>
+                                <span id="sim-rto-label" class="font-mono font-bold text-waxRed">6% Buffer</span>
+                            </div>
+                            <input id="sim-rto" type="range" min="2" max="18" step="1" value="6" oninput="updateSimulator()" class="vatsom-slider">
+                        </div>
+                    </div>
+
+                    <!-- Real-Time Computed KPI Dashboard -->
+                    <div class="lg:col-span-6 space-y-4">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <div class="bg-charcoal text-paper p-3.5 border border-accentGold/50">
+                                <span class="font-cinzel text-[9px] tracking-[0.2em] text-accentGold block">LANDED UNIT COST</span>
+                                <span id="out-unit-cost" class="font-mono font-bold text-xl text-paper mt-1 block">₹462</span>
+                                <span id="out-tier-tag" class="font-serif italic text-[10px] text-accentGold/80">Tier-2 Vendor Rate</span>
+                            </div>
+
+                            <div class="bg-charcoal text-paper p-3.5 border border-accentGold/50">
+                                <span class="font-cinzel text-[9px] tracking-[0.2em] text-accentGold block">GROSS MARGIN %</span>
+                                <span id="out-margin-pct" class="font-mono font-bold text-xl text-emerald-400 mt-1 block">68.1%</span>
+                                <span class="font-serif italic text-[10px] text-paper/65">Post-Packaging &amp; Seal</span>
+                            </div>
+
+                            <div class="bg-charcoal text-paper p-3.5 border border-accentGold/50 col-span-2 sm:col-span-1">
+                                <span class="font-cinzel text-[9px] tracking-[0.2em] text-accentGold block">OPTIMAL EOQ</span>
+                                <span id="out-eoq" class="font-mono font-bold text-xl text-accentGold mt-1 block">612 Units</span>
+                                <span class="font-serif italic text-[10px] text-paper/65">Reorder Point: 14 Days</span>
+                            </div>
+                        </div>
+
+                        <!-- Visual Margin Breakdown Bar -->
+                        <div class="ribbed-paper-dark p-4 border border-charcoal/25">
+                            <div class="flex justify-between items-baseline mb-2">
+                                <span class="font-cinzel font-bold text-[10px] tracking-[0.2em] text-charcoal">BATCH CONTRIBUTION PROJECTION</span>
+                                <span id="out-net-rev" class="font-mono font-bold text-base text-waxRed">₹4,49,000 Net</span>
+                            </div>
+                            <div class="w-full h-4 bg-charcoal/15 flex overflow-hidden border border-charcoal/30">
+                                <div id="bar-cogs" class="h-full bg-charcoal transition-all duration-300" style="width: 32%" title="COGS & Raw Botanicals"></div>
+                                <div id="bar-ops" class="h-full bg-waxRed transition-all duration-300" style="width: 10%" title="Fulfillment & RTO Buffer"></div>
+                                <div id="bar-profit" class="h-full bg-accentGold transition-all duration-300" style="width: 58%" title="Net Contribution Margin"></div>
+                            </div>
+                            <div class="flex justify-between text-[10px] font-mono text-charcoal/75 mt-2">
+                                <span>■ COGS: <b id="lbl-cogs">32%</b></span>
+                                <span>■ Logistics: <b id="lbl-ops">10%</b></span>
+                                <span>■ Net Margin: <b id="lbl-profit">58%</b></span>
+                            </div>
+                        </div>
+
+                        <p class="font-serif italic text-xs text-charcoal/75">
+                            <i class="fa-solid fa-circle-check text-waxRed mr-1"></i>
+                            <strong>Operational Insight:</strong> Mirrors Pratham's vendor evaluation matrices, glass-flacon MOQ brackets, and COD threshold policies (`COD_FREE_DELIVERY_THRESHOLD_PAISE`) implemented in Vatsom's production backend.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="parchment-roller mx-2"></div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- CHAPTER 04: INTERACTIVE TECHNICAL SKILLS, COMPETENCIES & PROOF LAB    -->
+    <!-- ===================================================================== -->
+    <section id="skills-matrix" class="relative z-20 max-w-6xl mx-auto px-4 sm:px-8 py-16">
+        <div class="text-center mb-10">
+            <span class="font-cinzel text-[11px] tracking-[0.35em] text-accentGold uppercase block">CHAPTER IV • TECHNICAL &amp; OPERATIONAL ARSENAL</span>
+            <h2 class="font-cinzel font-bold text-2xl sm:text-4xl tracking-[0.14em] text-paper mt-1">INTERACTIVE SKILL MATRIX &amp; PROOF OF WORK</h2>
+            <p class="font-serif italic text-sm text-paper/65 mt-1">
+                Click any skill or core competency chip below to inspect live code/analytics artifacts from Pratham's workflow.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+            <!-- Left 7 Cols: Interactive Skill Chips Categorized Exactly as Resume -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- Category 1: Data & Analytics -->
+                <div class="obsidian-card p-6">
+                    <div class="flex items-center justify-between border-b border-accentGold/25 pb-2.5 mb-4">
+                        <span class="font-cinzel font-bold text-xs tracking-[0.24em] text-accentGold">01. DATA &amp; ANALYTICS</span>
+                        <span class="font-serif italic text-xs text-paper/50">Click chip to inspect live query/model</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2.5" id="skills-data-chips">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Category 2: Business Systems & Productivity -->
+                <div class="obsidian-card p-6">
+                    <div class="flex items-center justify-between border-b border-accentGold/25 pb-2.5 mb-4">
+                        <span class="font-cinzel font-bold text-xs tracking-[0.24em] text-accentGold">02. BUSINESS SYSTEMS &amp; PRODUCTIVITY</span>
+                        <span class="font-serif italic text-xs text-paper/50">Operations &amp; Reporting Stack</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2.5" id="skills-systems-chips">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Category 3: 9 Core Competencies -->
+                <div class="obsidian-card p-6">
+                    <div class="flex items-center justify-between border-b border-accentGold/25 pb-2.5 mb-4">
+                        <span class="font-cinzel font-bold text-xs tracking-[0.24em] text-accentGold">03. CORE PROCUREMENT &amp; STRATEGY COMPETENCIES</span>
+                        <span class="font-serif italic text-xs text-paper/50">9 Verified Pillars</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" id="skills-competency-chips">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right 5 Cols: Live Interactive Proof-of-Work Inspector Terminal -->
+            <div class="lg:col-span-5 sticky top-24">
+                <div class="ribbed-paper p-6 border-2 border-accentGold shadow-2xl relative" id="skill-inspector-card">
+                    <div class="flex items-center justify-between border-b border-charcoal/20 pb-3 mb-4">
+                        <div>
+                            <span id="insp-category" class="px-2 py-0.5 bg-charcoal text-accentGold font-cinzel text-[9px] tracking-[0.22em]">DATA &amp; ANALYTICS</span>
+                            <h3 id="insp-title" class="font-cinzel font-bold text-xl text-charcoal mt-1">SQL (PostgreSQL &amp; Analytics)</h3>
+                        </div>
+                        <div class="w-9 h-9 rounded-full bg-waxRed text-accentGold flex items-center justify-center font-cinzel font-bold text-xs">
+                            <i id="insp-icon" class="fa-solid fa-database"></i>
+                        </div>
+                    </div>
+
+                    <p id="insp-desc" class="font-sans text-xs sm:text-sm text-charcoal/85 leading-relaxed mb-4">
+                        Used extensively to design Vatsom's Neon PostgreSQL relational schema, atomic inventory reservation queries, and vendor reorder point analytics.
+                    </p>
+
+                    <!-- Live Code / Formula Artifact Box -->
+                    <div class="bg-charcoal text-paper p-4 border border-accentGold/50 font-mono text-[11px] leading-relaxed overflow-x-auto mb-4">
+                        <div class="flex items-center justify-between text-[9px] text-accentGold/70 border-b border-white/10 pb-1.5 mb-2">
+                            <span id="insp-artifact-title">ARTIFACT: INVENTORY_REORDER_AUDIT.SQL</span>
+                            <span>VERIFIED IN PROD</span>
+                        </div>
+                        <pre id="insp-code" class="text-emerald-300/90 whitespace-pre-wrap">SELECT sku, product_name,
+  available_stock, reserved_stock,
+  CASE WHEN available_stock <= reorder_threshold
+       THEN 'TRIGGER_PO_DISPATCH'
+       ELSE 'OPTIMAL' END AS sourcing_status
+FROM products
+ORDER BY available_stock ASC;</pre>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs">
+                        <span id="insp-impact" class="font-serif italic text-waxRed font-semibold">
+                            Impact: Zero overselling via atomic stock locking.
+                        </span>
+                        <button onclick="crumpleInspectorCard()" class="px-2.5 py-1 border border-charcoal/30 hover:bg-waxRed hover:text-paper font-cinzel text-[9px] tracking-[0.18em] transition-colors">
+                            CRUMPLE CARD
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- CHAPTER 05: VATSOM PRODUCTION COMMERCE ARCHITECTURE EXPLORER          -->
+    <!-- ===================================================================== -->
+    <section id="architecture-case" class="relative z-20 max-w-6xl mx-auto px-4 sm:px-8 py-16">
+        <div class="text-center mb-10">
+            <span class="font-cinzel text-[11px] tracking-[0.35em] text-accentGold uppercase block">CHAPTER V • FLAGSHIP TECHNICAL &amp; OPERATIONS PROJECT</span>
+            <h2 class="font-cinzel font-bold text-2xl sm:text-4xl tracking-[0.14em] text-paper mt-1">VATSOM PRODUCTION ARCHITECTURE (<a href="https://vatsom.in" target="_blank" class="text-accentGold underline hover:text-goldBright">VATSOM.IN</a>)</h2>
+            <p class="font-serif italic text-sm text-paper/65 mt-1 max-w-2xl mx-auto">
+                Click any node in the production pipeline below or trigger a live simulated COD order packet to inspect how Pratham architected Vatsom's full-stack platform.
+            </p>
+        </div>
+
+        <div class="obsidian-card p-6 sm:p-10 border border-accentGold/35">
+            <!-- Interactive Pipeline Nodes -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <button onclick="selectArchNode(0)" id="arch-node-0" class="arch-node text-left p-4 border border-accentGold bg-accentGold/15 transition-all">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-mono text-[10px] text-accentGold">STAGE 01 • EDGE</span>
+                        <i class="fa-solid fa-globe text-accentGold"></i>
+                    </div>
+                    <h4 class="font-cinzel font-bold text-sm text-paper">Storefront &amp; Custom Domains</h4>
+                    <p class="font-serif italic text-xs text-paper/70 mt-1">vatsom.in • 3D Paper Physics</p>
+                </button>
+
+                <button onclick="selectArchNode(1)" id="arch-node-1" class="arch-node text-left p-4 border border-white/15 bg-white/[0.02] hover:border-accentGold/60 transition-all">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-mono text-[10px] text-accentGold">STAGE 02 • SECURITY</span>
+                        <i class="fa-solid fa-shield-halved text-accentGold"></i>
+                    </div>
+                    <h4 class="font-cinzel font-bold text-sm text-paper">Auth, Turnstile &amp; CSRF</h4>
+                    <p class="font-serif italic text-xs text-paper/70 mt-1">api.vatsom.in • Zero-Trust</p>
+                </button>
+
+                <button onclick="selectArchNode(2)" id="arch-node-2" class="arch-node text-left p-4 border border-white/15 bg-white/[0.02] hover:border-accentGold/60 transition-all">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-mono text-[10px] text-accentGold">STAGE 03 • DATABASE</span>
+                        <i class="fa-solid fa-bolt text-accentGold"></i>
+                    </div>
+                    <h4 class="font-cinzel font-bold text-sm text-paper">Atomic COD &amp; Stock Lock</h4>
+                    <p class="font-serif italic text-xs text-paper/70 mt-1">Neon PostgreSQL • Idempotent</p>
+                </button>
+
+                <button onclick="selectArchNode(3)" id="arch-node-3" class="arch-node text-left p-4 border border-white/15 bg-white/[0.02] hover:border-accentGold/60 transition-all">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-mono text-[10px] text-accentGold">STAGE 04 • CHANCERY</span>
+                        <i class="fa-solid fa-boxes-packing text-accentGold"></i>
+                    </div>
+                    <h4 class="font-cinzel font-bold text-sm text-paper">Admin Ledger &amp; Outbox</h4>
+                    <p class="font-serif italic text-xs text-paper/70 mt-1">admin.vatsom.in • AWB &amp; Audit</p>
+                </button>
+            </div>
+
+            <!-- Selected Stage Detail Panel -->
+            <div class="ribbed-paper p-6 border border-accentGold flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div class="space-y-2 max-w-2xl">
+                    <div class="flex items-center gap-2">
+                        <span id="arch-detail-badge" class="px-2 py-0.5 bg-waxRed text-paper font-cinzel text-[9px] tracking-[0.2em]">STAGE 01 ACTIVE</span>
+                        <span id="arch-detail-host" class="font-mono text-xs text-charcoal/70">https://vatsom.in</span>
+                    </div>
+                    <h3 id="arch-detail-title" class="font-cinzel font-bold text-lg sm:text-xl text-charcoal">
+                        Tactile Luxury Storefront &amp; Multi-Origin Edge Routing
+                    </h3>
+                    <p id="arch-detail-desc" class="font-sans text-xs sm:text-sm text-charcoal/85 leading-relaxed">
+                        Built and deployed a custom e-commerce storefront featuring laid-paper physics, Three.js WebGL paper crumpling, and strict hostname isolation across vatsom.in, api.vatsom.in, and admin.vatsom.in on Cloudflare Workers.
+                    </p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0 w-full md:w-auto">
+                    <button onclick="simulateOrderTrace()" class="px-4 py-2.5 bg-charcoal text-accentGold hover:bg-waxRed hover:text-paper font-cinzel font-bold text-[10px] tracking-[0.22em] transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play"></i>
+                        <span id="trace-btn-label">SIMULATE ORDER FLOW</span>
+                    </button>
+                    <a href="https://vatsom.in" target="_blank" rel="noopener" class="px-4 py-2 border border-charcoal text-charcoal hover:bg-charcoal hover:text-paper font-cinzel text-[10px] tracking-[0.22em] text-center transition-all">
+                        OPEN LIVE VATSOM.IN ↗
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- CHAPTER 06: EDUCATION (UPES BBA) & BEYOND THE LEDGER (MUSIC + HOOPS)  -->
+    <!-- ===================================================================== -->
+    <section id="sonic-atelier" class="relative z-20 max-w-6xl mx-auto px-4 sm:px-8 py-16">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- Left 6 Cols: Interactive Academic Coursework Dossier (UPES) -->
+            <div class="lg:col-span-6 ribbed-paper p-6 sm:p-8 border border-accentGold relative">
+                <span class="font-cinzel text-[10px] tracking-[0.28em] text-waxRed uppercase block">ACADEMIC FOUNDATION • 2023 – 2026</span>
+                <h3 class="font-cinzel font-bold text-xl sm:text-2xl text-charcoal mt-1">BACHELOR OF BUSINESS ADMINISTRATION (MARKETING)</h3>
+                <p class="font-serif italic text-sm text-charcoal/75 mb-4">University of Petroleum and Energy Studies (UPES)</p>
+
+                <p class="font-sans text-xs text-charcoal/75 mb-3">
+                    <i class="fa-solid fa-hand-pointer text-waxRed mr-1"></i>
+                    <strong>Click any coursework discipline</strong> to see how Pratham translated academic theory into live operational execution at Vatsom:
+                </p>
+
+                <div class="flex flex-wrap gap-2 mb-5" id="edu-course-pills">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="ribbed-paper-dark p-4 border border-charcoal/25">
+                    <span id="edu-active-course" class="font-cinzel font-bold text-xs tracking-wider text-waxRed block">OPERATIONS MANAGEMENT</span>
+                    <p id="edu-active-application" class="font-serif italic text-xs sm:text-sm text-charcoal/90 mt-1">
+                        Applied directly in structuring Vatsom's cold-pressed extraction batch schedules, safety-stock buffers, and packaging QC checklists.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right 6 Cols: Interactive Ghost Producer Studio & Basketball Court Vision -->
+            <div class="lg:col-span-6 space-y-6">
+
+                <!-- Ghost Producer Interactive Synth & Beat Sequencer -->
+                <div class="obsidian-card p-6 border border-accentGold/40">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <span class="font-cinzel text-[10px] tracking-[0.26em] text-accentGold uppercase block">CREATIVE DISCIPLINE • GHOST PRODUCER</span>
+                            <h3 class="font-cinzel font-bold text-lg text-paper">INTERACTIVE SOUND DESIGN &amp; SYNTH PAD</h3>
+                        </div>
+                        <button id="seq-play-btn" onclick="toggleSequencer()" class="px-3.5 py-1.5 bg-waxRed hover:bg-accentGold hover:text-charcoal text-paper font-cinzel font-bold text-[10px] tracking-[0.2em] transition-all flex items-center gap-1.5">
+                            <i id="seq-play-icon" class="fa-solid fa-play text-[9px]"></i>
+                            <span id="seq-play-label">PLAY GROOVE</span>
+                        </button>
+                    </div>
+                    <p class="font-serif italic text-xs text-paper/70 mb-4">
+                        Professional ghost producer experienced in DAWs, mixing, sound design, and audio workflows. Tap the pads below to trigger live synthesized chords or toggle the 8-step studio groove:
+                    </p>
+
+                    <!-- Interactive Synth Chord Pads -->
+                    <div class="grid grid-cols-4 gap-2.5 mb-4">
+                        <button onclick="triggerStudioPad(0)" class="studio-pad py-3 border border-accentGold/40 bg-white/[0.03] hover:bg-accentGold/20 active:scale-95 transition-all text-center">
+                            <span class="font-cinzel text-[10px] text-accentGold block">PAD I</span>
+                            <span class="font-mono text-[9px] text-paper/60">Cm9 Noir</span>
+                        </button>
+                        <button onclick="triggerStudioPad(1)" class="studio-pad py-3 border border-accentGold/40 bg-white/[0.03] hover:bg-accentGold/20 active:scale-95 transition-all text-center">
+                            <span class="font-cinzel text-[10px] text-accentGold block">PAD II</span>
+                            <span class="font-mono text-[9px] text-paper/60">AbMaj7 Gold</span>
+                        </button>
+                        <button onclick="triggerStudioPad(2)" class="studio-pad py-3 border border-accentGold/40 bg-white/[0.03] hover:bg-accentGold/20 active:scale-95 transition-all text-center">
+                            <span class="font-cinzel text-[10px] text-accentGold block">PAD III</span>
+                            <span class="font-mono text-[9px] text-paper/60">Fm11 Silk</span>
+                        </button>
+                        <button onclick="triggerStudioPad(3)" class="studio-pad py-3 border border-accentGold/40 bg-white/[0.03] hover:bg-accentGold/20 active:scale-95 transition-all text-center">
+                            <span class="font-cinzel text-[10px] text-accentGold block">PAD IV</span>
+                            <span class="font-mono text-[9px] text-paper/60">G7#5 Resolve</span>
+                        </button>
+                    </div>
+
+                    <!-- Live Waveform Visualizer Canvas -->
+                    <canvas id="studio-wave-canvas" height="54" class="w-full h-14 bg-black/80 border border-white/10 block"></canvas>
+                </div>
+
+                <!-- Competitive Basketball Interest Card with Interactive Shot-Arc Physics -->
+                <div class="obsidian-card p-6 border border-accentGold/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <span class="font-cinzel text-[10px] tracking-[0.26em] text-accentGold uppercase block">ATHLETIC LEADERSHIP • TEAM SPORTS</span>
+                        <h3 class="font-cinzel font-bold text-lg text-paper mt-0.5">COMPETITIVE BASKETBALL</h3>
+                        <p class="font-serif italic text-xs text-paper/70 mt-1">
+                            Court vision, high-pressure decision velocity, and team synchronization.
+                        </p>
+                    </div>
+                    <button onclick="takeCourtShot(this)" class="px-4 py-2.5 border border-accentGold text-accentGold hover:bg-accentGold hover:text-charcoal font-cinzel font-bold text-[10px] tracking-[0.2em] shrink-0 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-basketball"></i>
+                        <span id="hoop-shot-label">SHOOT 3-POINTER (0)</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- FOOTER & DIRECT EXECUTIVE DISPATCH                                    -->
+    <!-- ===================================================================== -->
+    <footer class="relative z-20 border-t border-accentGold/25 bg-black py-12 px-4 sm:px-8 mt-12">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+                <span class="font-cinzel font-bold text-lg tracking-[0.25em] text-paper block">PRATHAM VATSA</span>
+                <span class="font-serif italic text-xs text-accentGold">Founder, Vatsom (vatsom.in) • Proprietor, Pratham Enterprises</span>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="mailto:pratham1879@gmail.com" class="px-4 py-2 border border-accentGold/40 hover:border-accentGold text-paper font-cinzel text-[10px] tracking-[0.2em] transition-all">
+                    EMAIL: PRATHAM1879@GMAIL.COM
+                </a>
+                <a href="tel:+919999930048" class="px-4 py-2 border border-accentGold/40 hover:border-accentGold text-paper font-cinzel text-[10px] tracking-[0.2em] transition-all">
+                    CALL: +91 9999930048
+                </a>
+                <a href="vatsom_premium_oils.html" class="px-4 py-2 bg-accentGold text-charcoal font-cinzel font-bold text-[10px] tracking-[0.2em] hover:bg-goldBright transition-all">
+                    VISIT VATSOM STOREFRONT →
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Banner -->
+    <div id="portfolio-toast" class="fixed bottom-6 right-6 z-50 pointer-events-none opacity-0 translate-y-4 transition-all duration-300 ribbed-paper px-5 py-3 border-2 border-accentGold shadow-2xl flex items-center gap-3">
+        <div class="w-2.5 h-2.5 rotate-45 bg-waxRed"></div>
+        <span id="portfolio-toast-text" class="font-cinzel font-bold text-xs tracking-wider text-charcoal">COPIED TO CLIPBOARD</span>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- INTERACTIVE ENGINE SCRIPT                                             -->
+    <!-- ===================================================================== -->
+    <script>
+        /* ------------------------------------------------------------------ */
+        /* 1. LENIS SMOOTH SCROLL & HERO PARALLAX                             */
+        /* ------------------------------------------------------------------ */
+        let lenis = null;
+        if (typeof Lenis !== 'undefined') {
+            lenis = new Lenis({
+                duration: 1.15,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                smoothWheel: true
+            });
+            function raf(time) {
+                lenis.raf(time);
+                requestAnimationFrame(raf);
+            }
+            requestAnimationFrame(raf);
+        }
+
+        function scrollToSection(selector) {
+            playTactileClick(520, 0.04);
+            const target = document.querySelector(selector);
+            if (!target) return;
+            if (lenis) {
+                lenis.scrollTo(target, { offset: -72 });
+            } else {
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* 2. WEB AUDIO PROCEDURAL TACTILE & STUDIO SYNTHESIZER               */
+        /* ------------------------------------------------------------------ */
+        let audioEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioEnabled) return null;
+            if (!audioCtx) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (AC) audioCtx = new AC();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function toggleTactileAudio() {
+            audioEnabled = !audioEnabled;
+            const icon = document.getElementById('sound-icon');
+            const label = document.getElementById('sound-label');
+            if (audioEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-[10px]';
+                label.textContent = 'FX: ON';
+                playTactileClick(660, 0.06);
+                showToast('TACTILE & STUDIO AUDIO ENABLED');
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-[10px]';
+                label.textContent = 'FX: MUTED';
+                if (seqInterval) toggleSequencer();
+                showToast('AUDIO FX MUTED');
+            }
+        }
+
+        function playTactileClick(freq = 440, duration = 0.035) {
+            const ctx = getAudioCtx();
+            if (!ctx) return;
+            try {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + duration);
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playPaperCrumpleSound() {
+            const ctx = getAudioCtx();
+            if (!ctx) return;
+            try {
+                const bufferSize = ctx.sampleRate * 0.38;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    const env = Math.sin((i / bufferSize) * Math.PI);
+                    const crackle = Math.random() > 0.82 ? (Math.random() * 2 - 1) * 1.6 : (Math.random() * 2 - 1) * 0.35;
+                    data[i] = crackle * env;
+                }
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1400, ctx.currentTime);
+                filter.Q.setValueAtTime(1.8, ctx.currentTime);
+
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.16, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.38);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                noise.start();
+            } catch (e) {}
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* 3. HERO UNSEAL WITH 3D PAPER CRUMPLE OVER LEGS                     */
+        /* ------------------------------------------------------------------ */
+        let crumpledCount = 0;
+
+        function updateCrumpledBadge() {
+            const badge = document.getElementById('crumpled-counter-badge');
+            if (!badge) return;
+            if (crumpledCount > 0) {
+                badge.textContent = String(crumpledCount);
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function unsealPortfolioWithCrumple(e) {
+            if (e) e.stopPropagation();
+            const slip = document.getElementById('hero-leg-seal-card');
+            if (!slip || slip.dataset.crumpled === 'true') {
+                scrollToSection('#dossier-section');
+                return;
+            }
+            slip.dataset.crumpled = 'true';
+            playPaperCrumpleSound();
+            crumpledCount++;
+            updateCrumpledBadge();
+
+            if (window.PaperCrumpleEffect && typeof window.PaperCrumpleEffect.crumpleAndFall === 'function') {
+                window.PaperCrumpleEffect.crumpleAndFall(
+                    slip,
+                    {
+                        id: 77,
+                        name: 'PRATHAM VATSA — PORTFOLIO SEAL',
+                        subtitle: 'Founder • Operations • Supply Chain Dossier',
+                        badge: 'UNSEALED'
+                    },
+                    () => {
+                        slip.style.display = 'none';
+                        const resealBtn = document.getElementById('reseal-hero-btn');
+                        if (resealBtn) resealBtn.classList.remove('hidden');
+                        scrollToSection('#dossier-section');
+                    }
+                );
+            } else {
+                scrollToSection('#dossier-section');
+            }
+        }
+
+        function reSealHeroButton() {
+            const slip = document.getElementById('hero-leg-seal-card');
+            const resealBtn = document.getElementById('reseal-hero-btn');
+            if (!slip) return;
+            slip.dataset.crumpled = 'false';
+            slip.removeAttribute('style');
+            if (resealBtn) resealBtn.classList.add('hidden');
+            if (crumpledCount > 0) crumpledCount--;
+            updateCrumpledBadge();
+            playTactileClick(580, 0.05);
+            showToast('HERO PARCHMENT SEAL RESTORED');
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* 4. EXECUTIVE LENS SWITCHER & COMPETENCY BARS                       */
+        /* ------------------------------------------------------------------ */
+        const LENS_CONFIG = {
+            all: {
+                badge: 'POSITIONING: FOUNDER & OPERATIONS ANALYST',
+                headline: 'Founder with Hands-On Business Operations, Sourcing, Analytics & Digital Commerce Experience',
+                summary: 'BBA graduate specializing in Marketing with hands-on experience in <strong class="text-waxRed font-semibold">business operations, e-commerce management, branding, vendor coordination, and analytics</strong>. Founder of <strong class="text-charcoal font-bold underline decoration-accentGold decoration-2">Vatsom</strong>, a premium edible and aromatic oils brand, where I lead product sourcing, business strategy, website operations, and go-to-market execution. Strong foundation in <strong class="text-waxRed font-semibold">Excel, SQL, Python (Pandas), and data analysis</strong>, with a core focus on procurement, supply chain management, and strategic sourcing.',
+                bars: [
+                    { label: 'Procurement & Strategic Sourcing', pct: 94 },
+                    { label: 'E-Commerce Operations & GTM', pct: 96 },
+                    { label: 'SQL, Python (Pandas) & Excel Analytics', pct: 90 },
+                    { label: 'Vendor Negotiation & Cost Auditing', pct: 92 }
+                ]
+            },
+            founder: {
+                badge: 'LENS: FOUNDER & VENTURE OPERATIONS',
+                headline: 'Zero-to-One Brand Builder, Full-Stack Commerce Operator & Category Strategist',
+                summary: 'Founded and launched <strong class="text-waxRed font-semibold">Vatsom (vatsom.in)</strong> from the ground up — directing brand positioning, cold-pressed botanical formulation sourcing, full-stack Cloudflare edge commerce deployment, and marketplace expansion strategy alongside <strong class="text-charcoal font-bold">Pratham Enterprises</strong>.',
+                bars: [
+                    { label: 'Product & Category Strategy', pct: 96 },
+                    { label: 'End-to-End E-Commerce Execution', pct: 95 },
+                    { label: 'Brand Positioning & Go-To-Market', pct: 92 },
+                    { label: 'Stakeholder & Vendor Leadership', pct: 94 }
+                ]
+            },
+            procurement: {
+                badge: 'LENS: PROCUREMENT, SOURCING & SUPPLY CHAIN',
+                headline: 'Strategic Sourcing, Supplier Evaluation, Inventory Planning & Unit Economics Control',
+                summary: 'Focused on <strong class="text-waxRed font-semibold">raw botanical procurement, multi-vendor RFQs, packaging lead-time optimization, and inventory reorder planning</strong> across Vatsom and Pratham Enterprises. Engineered race-condition-free stock reservation and batch tracking in production.',
+                bars: [
+                    { label: 'Supplier Evaluation & Negotiation', pct: 96 },
+                    { label: 'Inventory & Reorder Point Planning', pct: 93 },
+                    { label: 'Unit Economics & Cost Analysis', pct: 94 },
+                    { label: 'Packaging & Cold-Chain Coordination', pct: 91 }
+                ]
+            },
+            analytics: {
+                badge: 'LENS: DATA ANALYTICS & BUSINESS INTELLIGENCE',
+                headline: 'Data-Driven Operations via Advanced Excel, SQL, Python (Pandas) & KPI Dashboards',
+                summary: 'Translates raw operational and transactional data into <strong class="text-waxRed font-semibold">actionable procurement and margin decisions</strong> using SQL queries, Python (Pandas) data pipelines, Advanced Excel Pivot models, and real-time KPI monitoring dashboards.',
+                bars: [
+                    { label: 'Advanced Excel, Pivots & Financial Models', pct: 95 },
+                    { label: 'SQL (PostgreSQL Schema & Querying)', pct: 92 },
+                    { label: 'Python (Pandas Data Cleaning & Analysis)', pct: 89 },
+                    { label: 'KPI Dashboards & Power BI Reporting', pct: 88 }
+                ]
+            }
+        };
+
+        function setExecutiveLens(key) {
+            playTactileClick(500, 0.04);
+            const cfg = LENS_CONFIG[key] || LENS_CONFIG.all;
+            document.querySelectorAll('.lens-btn').forEach((btn) => {
+                if (btn.dataset.lens === key) {
+                    btn.className = 'lens-btn px-4 py-2 font-cinzel text-[10px] tracking-[0.2em] border border-accentGold bg-accentGold text-charcoal font-bold transition-all';
+                } else {
+                    btn.className = 'lens-btn px-4 py-2 font-cinzel text-[10px] tracking-[0.2em] border border-accentGold/35 bg-charcoal/80 text-paper/80 hover:border-accentGold transition-all';
+                }
+            });
+
+            document.getElementById('lens-badge').textContent = cfg.badge;
+            document.getElementById('lens-headline').textContent = cfg.headline;
+            document.getElementById('lens-summary').innerHTML = cfg.summary;
+
+            const container = document.getElementById('competency-bars-container');
+            container.innerHTML = cfg.bars
+                .map(
+                    (b) => `
+                <div class="bg-paperDark/70 p-3 border border-charcoal/15">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="font-cinzel font-bold text-[10px] tracking-wider text-charcoal">${b.label}</span>
+                        <span class="font-mono font-bold text-xs text-waxRed">${b.pct}%</span>
+                    </div>
+                    <div class="w-full h-2 bg-charcoal/15 overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-waxRed to-accentGold transition-all duration-700" style="width: ${b.pct}%"></div>
+                    </div>
+                </div>
+            `
+                )
+                .join('');
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* 5. INTERACTIVE EXPERIENCE LEDGER SLIPS (WITH 3D PAPER CRUMPLE)     */
+        /* ------------------------------------------------------------------ */
+        const EXPERIENCE_DATA = [
+            {
+                id: 'exp-vatsom',
+                seed: 11,
+                role: 'FOUNDER',
+                org: 'Vatsom — Premium Edible & Aromatic Oils (vatsom.in)',
+                period: '2026 – PRESENT',
+                badge: 'VENTURE',
+                tag: 'SOURCING • OPERATIONS • COMMERCE',
+                bullets: [
+                    'Founded and launched Vatsom, a premium edible and aromatic oils brand.',
+                    'Led brand development, product strategy, raw botanical sourcing, supplier evaluation, and market positioning.',
+                    'Built and deployed a full e-commerce platform (vatsom.in) featuring authentication, COD order sealing, inventory tracking, and analytics.',
+                    'Managing marketplace expansion strategy and retail onboarding efforts.',
+                    'Developing KPI monitoring and business intelligence dashboards to support operational decisions.'
+                ],
+                blueprint: 'Production Stack: Cloudflare Workers Edge API + Neon PostgreSQL + Atomic Stock Reservation + Chancery Admin Portal.'
+            },
+            {
+                id: 'exp-enterprises',
+                seed: 23,
+                role: 'PROPRIETOR',
+                org: 'Pratham Enterprises',
+                period: '2026 – PRESENT',
+                badge: 'SOURCING',
+                tag: 'VENDOR COORDINATION • PROCUREMENT',
+                bullets: [
+                    'Supporting sourcing, multi-vendor negotiations, and supplier coordination across business initiatives.',
+                    'Managing vendor lead-time audits, material cost comparisons, and procurement documentation.'
+                ],
+                blueprint: 'Focus: Multi-tier vendor qualification, cost-per-unit benchmarking, and supply continuity.'
+            },
+            {
+                id: 'exp-jagriti',
+                seed: 37,
+                role: 'HEAD OF MARKETING TEAM',
+                org: 'Mission Jagriti (NGO)',
+                period: 'JUNE 2024 – SEPTEMBER 2024',
+                badge: 'LEADERSHIP',
+                tag: 'CAMPAIGN OPERATIONS • OUTREACH',
+                bullets: [
+                    'Led awareness campaigns and community outreach initiatives across target regions.',
+                    'Coordinated cross-functional marketing activities and volunteer engagement programs.',
+                    'Assisted in planning communication strategies to maximize campaign reach and stakeholder participation.'
+                ],
+                blueprint: 'Impact: Mobilized student & community volunteer networks with structured campaign execution calendars.'
+            },
+            {
+                id: 'exp-ecell',
+                seed: 49,
+                role: 'ENTREPRENEURSHIP CELL (E-CELL)',
+                org: 'UPES (University of Petroleum and Energy Studies)',
+                period: '2023 – 2026',
+                badge: 'E-CELL',
+                tag: 'VENTURE EVALUATION • STARTUP OPS',
+                bullets: [
+                    'Participated in startup-focused activities and entrepreneurial initiatives.',
+                    'Observed startup fundraising processes, investor interactions, and business model development.',
+                    'Engaged with founders and early-stage ventures to understand growth strategies and operational challenges.'
+                ],
+                blueprint: 'Focus: Unit economics teardown, pitch deck evaluation, and early-stage supply chain scalability.'
+            }
+        ];
+
+        function renderExperienceSlips() {
+            const container = document.getElementById('experience-slips-container');
+            if (!container) return;
+            container.innerHTML = EXPERIENCE_DATA.map(
+                (item, idx) => `
+                <div id="${item.id}" class="exp-slip-row ribbed-paper paper-card p-6 sm:p-8 border border-charcoal/25 shadow-2xl relative">
+                    <div class="paper-sheen"></div>
+                    <div class="paper-corner-curl"></div>
+
+                    <div class="relative z-10">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-charcoal/15 pb-3 mb-4">
+                            <div class="flex items-center gap-3">
+                                <span class="w-7 h-7 bg-charcoal text-accentGold font-cinzel font-bold text-xs flex items-center justify-center">0${idx + 1}</span>
+                                <div>
+                                    <span class="font-cinzel text-[9px] tracking-[0.24em] text-waxRed font-bold block">${item.tag}</span>
+                                    <h3 class="font-cinzel font-bold text-lg sm:text-xl text-charcoal tracking-wide">${item.role} <span class="font-serif italic font-normal text-sm sm:text-base text-charcoal/75">— ${item.org}</span></h3>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-1 bg-paperDark border border-charcoal/20 font-cinzel font-bold text-[10px] tracking-[0.16em] text-waxRed">${item.period}</span>
+                                <button onclick="toggleBlueprint('${item.id}-bp')" class="px-3 py-1 bg-charcoal text-accentGold hover:bg-accentGold hover:text-charcoal font-cinzel text-[9px] tracking-[0.18em] transition-colors">
+                                    INSPECT BLUEPRINT
+                                </button>
+                                <button onclick="crumpleExperienceSlip('${item.id}', '${item.role} — ${item.org.replace(/'/g, '')}', '${item.tag}', '${item.badge}')" class="px-3 py-1 bg-waxRed/15 hover:bg-waxRed text-waxRed hover:text-paper border border-waxRed/40 font-cinzel text-[9px] tracking-[0.18em] transition-colors flex items-center gap-1" title="3D Crumple & Drop this Parchment Slip">
+                                    <i class="fa-solid fa-scroll"></i>
+                                    <span>CRUMPLE SLIP</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <ul class="space-y-2 text-xs sm:text-sm text-charcoal/90 pl-1">
+                            ${item.bullets
+                                .map(
+                                    (b) => `
+                                <li class="flex items-start gap-2.5">
+                                    <span class="w-1.5 h-1.5 rotate-45 bg-accentGold mt-2 shrink-0"></span>
+                                    <span>${b}</span>
+                                </li>
+                            `
+                                )
+                                .join('')}
+                        </ul>
+
+                        <!-- Collapsible Operational Blueprint Drawer -->
+                        <div id="${item.id}-bp" class="hidden mt-4 pt-3 border-t border-charcoal/15">
+                            <div class="bg-charcoal text-paper p-3.5 border-l-4 border-accentGold flex items-center justify-between gap-4">
+                                <div class="font-mono text-xs text-accentGold">
+                                    <i class="fa-solid fa-gears mr-1.5"></i> ${item.blueprint}
+                                </div>
+                                <span class="font-cinzel text-[9px] tracking-[0.2em] text-paper/50 shrink-0">VERIFIED RECORD</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `
+            ).join('');
+            bind3DTiltCards();
+        }
+
+        function toggleBlueprint(bpId) {
+            playTactileClick(620, 0.04);
+            const el = document.getElementById(bpId);
+            if (!el) return;
+            el.classList.toggle('hidden');
+        }
+
+        function crumpleExperienceSlip(elementId, title, subtitle, badge) {
+            const el = document.getElementById(elementId);
+            if (!el || el.dataset.crumpled === 'true') return;
+            el.dataset.crumpled = 'true';
+            playPaperCrumpleSound();
+            crumpledCount++;
+            updateCrumpledBadge();
+
+            if (window.PaperCrumpleEffect && typeof window.PaperCrumpleEffect.crumpleAndFall === 'function') {
+                window.PaperCrumpleEffect.crumpleAndFall(
+                    el,
+                    {
+                        id: elementId,
+                        name: title.slice(0, 34),
+                        subtitle: subtitle,
+                        badge: badge
+                    },
+                    () => {
+                        el.style.display = 'none';
+                        showToast('SLIP CRUMPLED IN 3D • CLICK "RESTORE ALL" ANYTIME');
+                    }
+                );
+            }
+        }
+
+        function crumpleRandomSlip() {
+            const visibleSlips = Array.from(document.querySelectorAll('.exp-slip-row')).filter(
+                (el) => el.dataset.crumpled !== 'true' && el.style.display !== 'none'
+            );
+            if (visibleSlips.length === 0) {
+                restoreAllCrumpledSlips();
+                return;
+            }
+            const target = visibleSlips[0];
+            const item = EXPERIENCE_DATA.find((d) => d.id === target.id) || EXPERIENCE_DATA[0];
+            crumpleExperienceSlip(target.id, `${item.role} — ${item.org}`, item.tag, item.badge);
+        }
+
+        let customMemoCounter = 1;
+        function spawnCustomSlip() {
+            playTactileClick(540, 0.05);
+            customMemoCounter++;
+            const titleInput = document.getElementById('custom-slip-title');
+            const subInput = document.getElementById('custom-slip-sub');
+            const title = (titleInput.value || 'Operational Sourcing Dispatch').trim();
+            const sub = (subInput.value || 'Approved by Pratham Vatsa').trim();
+            const id = `custom-memo-slip-${customMemoCounter}`;
+
+            const stage = document.getElementById('custom-slips-stage');
+            const wrapper = document.createElement('div');
+            wrapper.id = id;
+            wrapper.className = 'ribbed-paper p-5 border border-charcoal/25 flex items-center justify-between gap-4 shadow-xl mb-3';
+            wrapper.innerHTML = `
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 bg-charcoal text-accentGold font-cinzel text-[9px] tracking-[0.2em]">DESK MEMO #0${customMemoCounter}</span>
+                        <span class="font-mono text-[10px] text-waxRed font-semibold">LIVE PARCHMENT</span>
+                    </div>
+                    <h4 class="font-cinzel font-bold text-base text-charcoal mt-1">${title.replace(/</g, '&lt;')}</h4>
+                    <p class="font-serif italic text-xs text-charcoal/75">${sub.replace(/</g, '&lt;')}</p>
+                </div>
+                <button onclick="crumpleCustomMemo('${id}', '${title.replace(/'/g, '')}', '${sub.replace(/'/g, '')}', 'MEMO')" class="px-3.5 py-2 bg-waxRed hover:bg-charcoal text-paper font-cinzel text-[10px] tracking-[0.2em] transition-colors shrink-0 flex items-center gap-1.5">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>CRUMPLE 3D</span>
+                </button>
+            `;
+            stage.prepend(wrapper);
+            showToast('NEW PARCHMENT MEMO STAMPED');
+        }
+
+        function crumpleCustomMemo(id, title, sub, badge) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            playPaperCrumpleSound();
+            if (window.PaperCrumpleEffect) {
+                window.PaperCrumpleEffect.crumpleAndFall(
+                    el,
+                    { id, name: title.slice(0, 32), subtitle: sub.slice(0, 44), badge },
+                    () => el.remove()
+                );
+            } else {
+                el.remove();
+            }
+        }
+
+        function restoreAllCrumpledSlips() {
+            playTactileClick(680, 0.06);
+            renderExperienceSlips();
+            reSealHeroButton();
+            const insp = document.getElementById('skill-inspector-card');
+            if (insp) {
+                insp.dataset.crumpled = 'false';
+                insp.removeAttribute('style');
+            }
+            crumpledCount = 0;
+            updateCrumpledBadge();
+            showToast('ALL PARCHMENT SLIPS RESTORED & UNROLLED');
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* 6. PROCUREMENT & UNIT ECONOMICS SIMULATOR                          */
+        /* ------------------------------------------------------------------ */
+        let currentSimSku = { key: 'almond', retail: 1450, baseCost: 520 };
+
+        function selectSimSku(key, retail, baseCost) {
+            playTactileClick(490, 0.04);
+            currentSimSku = { key, retail, baseCost };
+            ['almond', 'sesame', 'rosemary'].forEach((k) => {
+                const btn = document.getElementById(`sku-${k}`);
+                if (!btn) return;
+                if (k === key) {
+                    btn.className = 'sim-sku-btn p-2.5 border border-charcoal bg-charcoal text-accentGold font-cinzel text-[10px] tracking-wider text-center transition-all';
+                } else {
+                    btn.className = 'sim-sku-btn p-2.5 border border-charcoal/25 bg-paperDark/60 text-charcoal font-cinzel text-[10px] tracking-wider text-center hover:border-charcoal transition-all';
+                }
+            });
+            updateSimulator();
+        }
+
+        function updateSimulator() {
+            const vol = Number(document.getElementById('sim-vol').value || 500);
+            const eff = Number(document.getElementById('sim-eff').value || 12);
+            const rto = Number(document.getElementById('sim-rto').value || 6);
+
+            document.getElementById('sim-vol-label').textContent = `${vol.toLocaleString('en-IN')} Units`;
+            document.getElementById('sim-eff-label').textContent = `+${eff}% Optimization`;
+            document.getElementById('sim-rto-label').textContent = `${rto}% Buffer`;
+
+            // Volume discount factor
+            const volDiscount = vol >= 1500 ? 0.84 : vol >= 1000 ? 0.89 : vol >= 500 ? 0.94 : 1.0;
+            const effDiscount = 1 - eff * 0.008;
+            const unitCost = Math.round(currentSimSku.baseCost * volDiscount * effDiscount);
+
+            const logisticsCost = Math.round(currentSimSku.retail * (rto / 100) + 65);
+            const netUnitProfit = Math.max(40, currentSimSku.retail - unitCost - logisticsCost);
+            const grossMarginPct = ((currentSimSku.retail - unitCost) / currentSimSku.retail) * 100;
+            const totalNetContribution = netUnitProfit * vol;
+
+            // EOQ = sqrt((2 * AnnualDemand * OrderCost) / HoldingCost)
+            const annualDemand = vol * 6;
+            const eoq = Math.round(Math.sqrt((2 * annualDemand * 4500) / (unitCost * 0.22)));
+
+            document.getElementById('out-unit-cost').textContent = `₹${unitCost.toLocaleString('en-IN')}`;
+            document.getElementById('out-tier-tag').textContent =
+                vol >= 1000 ? 'Tier-1 Direct Mill Contract' : vol >= 500 ? 'Tier-2 Wholesale Bracket' : 'Spot Pilot Batch';
+            document.getElementById('out-margin-pct').textContent = `${grossMarginPct.toFixed(1)}%`;
+            document.getElementById('out-eoq').textContent = `${eoq.toLocaleString('en-IN')} Units`;
+            document.getElementById('out-net-rev').textContent = `₹${totalNetContribution.toLocaleString('en-IN')} Net`;
+
+            const cogsPct = Math.round((unitCost / currentSimSku.retail) * 100);
+            const opsPct = Math.round((logisticsCost / currentSimSku.retail) * 100);
+            const profitPct = Math.max(5, 100 - cogsPct - opsPct);
+
+            document.getElementById('bar-cogs').style.width = `${cogsPct}%`;
+            document.getElementById('bar-ops').style.width = `${opsPct}%`;
+            document.getElementById('bar-profit').style.width = `${profitPct}%`;
+
+            document.getElementById('lbl-cogs').textContent = `${cogsPct}%`;
+            document.getElementById('lbl-ops').textContent = `${opsPct}%`;
+            document.getElementById('lbl-profit').textContent = `${profitPct}%`;
+        }
+
+        function resetSimulator() {
+            document.getElementById('sim-vol').value = 500;
+            document.getElementById('sim-eff').value = 12;
+            document.getElementById('sim-rto').value = 6;
+            selectSimSku('almond', 1450, 520);
+            showToast('SOURCING SIMULATOR RESET TO BASELINE');
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* 7. TECHNICAL SKILLS & COMPETENCIES PROOF-OF-WORK INSPECTOR         */
+        /* ------------------------------------------------------------------ */
+        const SKILLS_DB = [
+            {
+                id: 'sql',
+                group: 'data',
+                name: 'SQL (PostgreSQL)',
+                category: 'DATA & ANALYTICS',
+                icon: 'fa-database',
+                desc: 'Designed Vatsom’s normalized PostgreSQL database schema, atomic inventory reservation locks, and supplier lead-time audit queries.',
+                artifactTitle: 'ARTIFACT: ATOMIC_STOCK_RESERVATION.SQL',
+                code: `UPDATE products
+SET available_stock = available_stock - $1,
+    reserved_stock  = reserved_stock + $1
+WHERE id = $2 AND available_stock >= $1
+RETURNING id, sku, available_stock;`,
+                impact: 'Impact: Eliminates race-condition overselling during high-concurrency checkout.'
+            },
+            {
+                id: 'excel',
+                group: 'data',
+                name: 'Advanced Excel & Pivot Tables',
+                category: 'DATA & ANALYTICS',
+                icon: 'fa-table',
+                desc: 'Built multi-sheet vendor evaluation scorecards, landed cost calculators, dynamic Pivot Table margin trackers, and EOQ models.',
+                artifactTitle: 'ARTIFACT: VENDOR_SCORE_MATRIX.XLSX',
+                code: `=INDEX(Vendor_Tier_Rate,
+  MATCH(1, (Batch_Qty >= MOQ_Min) *
+           (Quality_Grade = "Cold_Pressed_A1"), 0))
+  * (1 - Negotiated_Rebate_Pct)`,
+                impact: 'Impact: Standardized supplier comparison across raw botanical & glass flacon vendors.'
+            },
+            {
+                id: 'python',
+                group: 'data',
+                name: 'Python (Pandas)',
+                category: 'DATA & ANALYTICS',
+                icon: 'fa-code',
+                desc: 'Automated order cohort analysis, SKU velocity ranking, and seasonal demand forecasting using Python and Pandas DataFrames.',
+                artifactTitle: 'ARTIFACT: SKU_VELOCITY_PANDAS.PY',
+                code: `df['landed_margin'] = (df['mrp_paise'] - df['cogs_paise']) / df['mrp_paise']
+reorder_df = df.groupby('sku').agg(
+    daily_burn=('qty', lambda x: x.sum() / 30),
+    lead_days=('supplier_lead_days', 'mean')
+)
+reorder_df['rop_units'] = (reorder_df['daily_burn'] * reorder_df['lead_days'] * 1.25).round()`,
+                impact: 'Impact: Automated safety-stock and Reorder Point (ROP) alerts.'
+            },
+            {
+                id: 'dashboards',
+                group: 'data',
+                name: 'KPI Dashboards & Power BI',
+                category: 'DATA & ANALYTICS',
+                icon: 'fa-chart-pie',
+                desc: 'Engineered executive dashboards tracking AOV (Average Order Value), COD-to-Delivered conversion rate, and batch fulfillment SLA.',
+                artifactTitle: 'ARTIFACT: EXECUTIVE_KPI_METRICS.JSON',
+                code: `{
+  "AOV_Target_INR": 1680,
+  "Free_Delivery_Threshold_INR": 1500,
+  "Fulfillment_Dispatch_SLA_Hours": 24,
+  "Outbox_Delivery_Success_Rate": "99.8%"
+}`,
+                impact: 'Impact: Real-time visibility into unit economics and customer retention.'
+            },
+            {
+                id: 'ecom-ops',
+                group: 'systems',
+                name: 'E-Commerce Operations',
+                category: 'BUSINESS SYSTEMS',
+                icon: 'fa-cart-flatbed-boxes',
+                desc: 'End-to-end ownership of catalog architecture, COD verification policy, AWB courier tracking, and Chancery administrative workflows.',
+                artifactTitle: 'ARTIFACT: ORDER_LIFECYCLE_FSM.TS',
+                code: `PENDING_CONFIRMATION -> CONFIRMED -> PACKED
+  -> DISPATCHED (AWB Assigned) -> DELIVERED
+  [Rollback Trigger]: CANCELLED -> Releases Reserved Stock`,
+                impact: 'Impact: Seamless order-to-cash lifecycle with full audit trail.'
+            },
+            {
+                id: 'sourcing',
+                group: 'systems',
+                name: 'Inventory & Supplier Sourcing',
+                category: 'BUSINESS SYSTEMS',
+                icon: 'fa-truck-ramp-box',
+                desc: 'Direct coordination with cold-pressed extraction mills and artisanal packaging vendors to maintain purity standards and margin targets.',
+                artifactTitle: 'ARTIFACT: SUPPLIER_AUDIT_CHECKLIST.MD',
+                code: `1. Cold-Press Extraction Temp < 45°C Verified
+2. GC-MS Purity & Botanical Origin Certificate
+3. Amber UV-Protected Glass Dropper Seal Test
+4. Lead-Time SLA <= 10 Business Days`,
+                impact: 'Impact: Zero batch rejections and consistent luxury unboxing quality.'
+            },
+            {
+                id: 'process-docs',
+                group: 'systems',
+                name: 'Process Documentation & SOPs',
+                category: 'BUSINESS SYSTEMS',
+                icon: 'fa-file-signature',
+                desc: 'Authored clear Standard Operating Procedures (SOPs) for warehouse batch intake, order sealing, and customer escalation handling.',
+                artifactTitle: 'ARTIFACT: CHANCERY_DISPATCH_SOP.TXT',
+                code: `STEP 1: Verify Customer Session & Pincode Serviceability
+STEP 2: Reserve Batch Stock Atomically in Ledger
+STEP 3: Wax-Seal Flacon & Assign Courier AWB
+STEP 4: Trigger Automated Outbox Dispatch Email`,
+                impact: 'Impact: Turnkey repeatability ready for 3PL & team scaling.'
+            }
+        ];
+
+        const CORE_COMPETENCIES = [
+            { name: 'Procurement Fundamentals', desc: 'RFQ preparation, purchase order lifecycle, and vendor onboarding compliance.' },
+            { name: 'Vendor & Supplier Sourcing', desc: 'Identifying and qualifying reliable raw botanical and packaging manufacturers.' },
+            { name: 'Strategic Sourcing & Evaluation', desc: 'Multi-criteria supplier scoring balancing cost, quality, and lead-time reliability.' },
+            { name: 'Inventory & Reorder Planning', desc: 'EOQ modeling, safety-stock calculation, and batch stock-out prevention.' },
+            { name: 'Business Operations & Auditing', desc: 'End-to-end workflow design, SOP governance, and operational bottleneck removal.' },
+            { name: 'Cost Analysis & Negotiation', desc: 'Should-cost modeling, MOQ tier negotiation, and landed margin expansion.' },
+            { name: 'Category & Product Strategy', desc: 'SKU assortment planning, pricing architecture, and premium tier positioning.' },
+            { name: 'Market Research & Positioning', desc: 'Competitor benchmarking, consumer sentiment analysis, and luxury D2C branding.' },
+            { name: 'Stakeholder Communication', desc: 'Cross-functional alignment across suppliers, logistics partners, and customers.' }
+        ];
+
+        function renderSkillsMatrix() {
+            const dataContainer = document.getElementById('skills-data-chips');
+            const sysContainer = document.getElementById('skills-systems-chips');
+            const compContainer = document.getElementById('skills-competency-chips');
+
+            dataContainer.innerHTML = SKILLS_DB.filter((s) => s.group === 'data')
+                .map(
+                    (s) => `
+                <button onclick="inspectSkill('${s.id}')" class="skill-chip px-3.5 py-2 border border-accentGold/40 bg-white/[0.03] hover:bg-accentGold hover:text-charcoal font-cinzel text-xs tracking-wider text-paper transition-all flex items-center gap-2">
+                    <i class="fa-solid ${s.icon} text-accentGold"></i>
+                    <span>${s.name}</span>
+                </button>
+            `
+                )
+                .join('');
+
+            sysContainer.innerHTML = SKILLS_DB.filter((s) => s.group === 'systems')
+                .map(
+                    (s) => `
+                <button onclick="inspectSkill('${s.id}')" class="skill-chip px-3.5 py-2 border border-accentGold/40 bg-white/[0.03] hover:bg-accentGold hover:text-charcoal font-cinzel text-xs tracking-wider text-paper transition-all flex items-center gap-2">
+                    <i class="fa-solid ${s.icon} text-accentGold"></i>
+                    <span>${s.name}</span>
+                </button>
+            `
+                )
+                .join('');
+
+            compContainer.innerHTML = CORE_COMPETENCIES.map(
+                (c, i) => `
+                <button onclick="inspectCompetency(${i})" class="text-left p-2.5 border border-white/10 bg-white/[0.02] hover:border-accentGold/60 hover:bg-accentGold/10 transition-all flex items-center gap-2.5 group">
+                    <span class="w-1.5 h-1.5 rotate-45 bg-accentGold group-hover:scale-150 transition-transform shrink-0"></span>
+                    <span class="font-sans text-xs text-paper/90 group-hover:text-accentGold">${c.name}</span>
+                </button>
+            `
+            ).join('');
+        }
+
+        function inspectSkill(id) {
+            playTactileClick(580, 0.04);
+            const s = SKILLS_DB.find((item) => item.id === id) || SKILLS_DB[0];
+            const card = document.getElementById('skill-inspector-card');
+            if (card && card.dataset.crumpled === 'true') {
+                card.dataset.crumpled = 'false';
+                card.removeAttribute('style');
+            }
+            document.getElementById('insp-category').textContent = s.category;
+            document.getElementById('insp-title').textContent = s.name;
+            document.getElementById('insp-icon').className = `fa-solid ${s.icon}`;
+            document.getElementById('insp-desc').textContent = s.desc;
+            document.getElementById('insp-artifact-title').textContent = s.artifactTitle;
+            document.getElementById('insp-code').textContent = s.code;
+            document.getElementById('insp-impact').textContent = s.impact;
+        }
+
+        function inspectCompetency(idx) {
+            playTactileClick(520, 0.04);
+            const c = CORE_COMPETENCIES[idx] || CORE_COMPETENCIES[0];
+            const card = document.getElementById('skill-inspector-card');
+            if (card && card.dataset.crumpled === 'true') {
+                card.dataset.crumpled = 'false';
+                card.removeAttribute('style');
+            }
+            document.getElementById('insp-category').textContent = 'CORE COMPETENCY PILLAR #0' + (idx + 1);
+            document.getElementById('insp-title').textContent = c.name;
+            document.getElementById('insp-icon').className = 'fa-solid fa-compass-drafting';
+            document.getElementById('insp-desc').textContent = c.desc;
+            document.getElementById('insp-artifact-title').textContent = 'EXECUTION FRAMEWORK: VATSOM & PRATHAM ENTERPRISES';
+            document.getElementById('insp-code').textContent = `[Competency]: ${c.name}\n[Application]: Direct sourcing, vendor evaluation & operational governance\n[Verification]: Demonstrated across Vatsom production launch (2026)`;
+            document.getElementById('insp-impact').textContent = 'Impact: Core pillar of Pratham Vatsa’s operations & supply chain playbook.';
+        }
+
+        function crumpleInspectorCard() {
+            const card = document.getElementById('skill-inspector-card');
+            if (!card || card.dataset.crumpled === 'true') return;
+            card.dataset.crumpled = 'true';
+            playPaperCrumpleSound();
+            crumpledCount++;
+            updateCrumpledBadge();
+
+            const title = document.getElementById('insp-title').textContent;
+            if (window.PaperCrumpleEffect) {
+                window.PaperCrumpleEffect.crumpleAndFall(
+                    card,
+                    { id: 99, name: title, subtitle: 'Skill Proof Artifact • Click any chip to respawn', badge: 'SKILL' },
+                    () => {
+                        showToast('CLICK ANY SKILL CHIP TO UNROLL A FRESH ARTIFACT CARD');
+                    }
+                );
+            }
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* 8. VATSOM PRODUCTION ARCHITECTURE EXPLORER                         */
+        /* ------------------------------------------------------------------ */
+        const ARCH_STAGES = [
+            {
+                badge: 'STAGE 01 ACTIVE',
+                host: 'https://vatsom.in (Storefront Origin)',
+                title: 'Tactile Luxury Storefront & Multi-Origin Edge Routing',
+                desc: 'Built and deployed Vatsom’s customer storefront featuring laid-paper physics, Three.js WebGL paper crumpling, and strict hostname isolation across vatsom.in, api.vatsom.in, and admin.vatsom.in on Cloudflare Workers.'
+            },
+            {
+                badge: 'STAGE 02 ACTIVE',
+                host: 'https://api.vatsom.in (Zero-Trust API)',
+                title: 'Google Identity, Cloudflare Turnstile & Signed Session Security',
+                desc: 'Implemented HMAC-SHA256 signed HttpOnly session cookies, double-submit CSRF tokens, Turnstile bot verification with hostname enforcement, and Cloudflare Access JWT validation.'
+            },
+            {
+                badge: 'STAGE 03 ACTIVE',
+                host: 'Neon PostgreSQL + Hyperdrive',
+                title: 'Idempotent COD Checkout & Atomic Inventory Reservation',
+                desc: 'Engineered transactional checkout in PostgreSQL that validates pincodes, enforces COD order thresholds, locks product stock atomically to prevent race-condition overselling, and seals immutable order snapshots.'
+            },
+            {
+                badge: 'STAGE 04 ACTIVE',
+                host: 'https://admin.vatsom.in (Chancery Portal)',
+                title: 'Chancery Admin Ledger, Batch Stock Control & Outbox Engine',
+                desc: 'Developed the isolated administration portal for order status transitions, courier AWB tracking assignment, inventory batch adjustments, and a cron-driven transactional email outbox.'
+            }
+        ];
+
+        function selectArchNode(idx) {
+            playTactileClick(560, 0.04);
+            const st = ARCH_STAGES[idx] || ARCH_STAGES[0];
+            for (let i = 0; i < 4; i++) {
+                const btn = document.getElementById(`arch-node-${i}`);
+                if (!btn) continue;
+                if (i === idx) {
+                    btn.className = 'arch-node text-left p-4 border border-accentGold bg-accentGold/15 transition-all scale-[1.02]';
+                } else {
+                    btn.className = 'arch-node text-left p-4 border border-white/15 bg-white/[0.02] hover:border-accentGold/60 transition-all';
+                }
+            }
+            document.getElementById('arch-detail-badge').textContent = st.badge;
+            document.getElementById('arch-detail-host').textContent = st.host;
+            document.getElementById('arch-detail-title').textContent = st.title;
+            document.getElementById('arch-detail-desc').textContent = st.desc;
+        }
+
+        let traceRunning = false;
+        function simulateOrderTrace() {
+            if (traceRunning) return;
+            traceRunning = true;
+            const lbl = document.getElementById('trace-btn-label');
+            let step = 0;
+            lbl.textContent = 'TRACING PACKET...';
+            const timer = setInterval(() => {
+                selectArchNode(step);
+                step++;
+                if (step >= 4) {
+                    clearInterval(timer);
+                    lbl.textContent = 'SIMULATE ORDER FLOW';
+                    traceRunning = false;
+                    showToast('ORDER SEALED & DISPATCHED THROUGH ALL 4 PRODUCTION STAGES');
+                }
+            }, 650);
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* 9. EDUCATION COURSEWORK INTERACTIVE PILLS                          */
+        /* ------------------------------------------------------------------ */
+        const EDU_COURSES = [
+            { name: 'Operations Management', app: 'Applied directly in structuring Vatsom’s cold-pressed extraction batch schedules, safety-stock buffers, and packaging QC checklists.' },
+            { name: 'Strategic Management', app: 'Guided Vatsom’s luxury atelier moat, direct-to-consumer unit economics, and multi-channel expansion roadmap.' },
+            { name: 'Marketing Management', app: 'Translated into sensory brand storytelling, high-converting storefront UX, and Mission Jagriti outreach campaigns.' },
+            { name: 'Consumer Behaviour', app: 'Shaped tactile unboxing rituals, wax-sealed parchment receipts, and trust-first Cash-on-Delivery checkout UX.' },
+            { name: 'Brand Management', app: 'Established Vatsom’s obsidian-and-parchment visual identity, typography system, and artisanal positioning.' },
+            { name: 'Product Management', app: 'Led full lifecycle from raw botanical formulation specs to deploying the production web application on vatsom.in.' },
+            { name: 'Human Resource Management', app: 'Applied in coordinating volunteer teams at Mission Jagriti and aligning external supplier/logistics partners.' },
+            { name: 'Business Communication', app: 'Powering structured vendor RFQ negotiations, executive reporting, and clear SOP documentation.' }
+        ];
+
+        function renderEducationCoursework() {
+            const container = document.getElementById('edu-course-pills');
+            if (!container) return;
+            container.innerHTML = EDU_COURSES.map(
+                (c, i) => `
+                <button onclick="selectEduCourse(${i})" id="edu-pill-${i}" class="px-3 py-1.5 font-cinzel text-[10px] tracking-wider border transition-all ${
+                    i === 0 ? 'bg-charcoal text-accentGold border-charcoal font-bold' : 'bg-paperDark/70 text-charcoal border-charcoal/25 hover:border-charcoal'
+                }">
+                    ${c.name}
+                </button>
+            `
+            ).join('');
+        }
+
+        function selectEduCourse(idx) {
+            playTactileClick(510, 0.04);
+            const c = EDU_COURSES[idx] || EDU_COURSES[0];
+            EDU_COURSES.forEach((_, i) => {
+                const btn = document.getElementById(`edu-pill-${i}`);
+                if (!btn) return;
+                btn.className =
+                    i === idx
+                        ? 'px-3 py-1.5 font-cinzel text-[10px] tracking-wider border transition-all bg-charcoal text-accentGold border-charcoal font-bold'
+                        : 'px-3 py-1.5 font-cinzel text-[10px] tracking-wider border transition-all bg-paperDark/70 text-charcoal border-charcoal/25 hover:border-charcoal';
+            });
+            document.getElementById('edu-active-course').textContent = c.name.toUpperCase();
+            document.getElementById('edu-active-application').textContent = c.app;
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* 10. GHOST PRODUCER SYNTHESIZER & BASKETBALL SHOT COUNTER           */
+        /* ------------------------------------------------------------------ */
+        const CHORD_BANK = [
+            [130.81, 155.56, 196.0, 233.08, 293.66], // Cm9
+            [207.65, 261.63, 311.13, 392.0],         // AbMaj7
+            [174.61, 207.65, 261.63, 311.13, 349.23],// Fm11
+            [196.0, 246.94, 311.13, 349.23]          // G7#5
+        ];
+
+        let waveEnergy = 0.15;
+
+        function triggerStudioPad(padIdx) {
+            waveEnergy = 1.0;
+            const ctx = getAudioCtx();
+            if (!ctx) return;
+            const freqs = CHORD_BANK[padIdx] || CHORD_BANK[0];
+            const now = ctx.currentTime;
+
+            freqs.forEach((f, i) => {
+                const osc = ctx.createOscillator();
+                const filter = ctx.createBiquadFilter();
+                const gain = ctx.createGain();
+
+                osc.type = i % 2 === 0 ? 'sawtooth' : 'triangle';
+                osc.frequency.setValueAtTime(f, now);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1800, now);
+                filter.frequency.exponentialRampToValueAtTime(280, now + 1.1);
+
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.045, now + 0.04);
+                gain.gain.exponentialRampToValueAtTime(0.0008, now + 1.25);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 1.3);
+            });
+        }
+
+        let seqInterval = null;
+        let seqStep = 0;
+        function toggleSequencer() {
+            const icon = document.getElementById('seq-play-icon');
+            const label = document.getElementById('seq-play-label');
+            if (seqInterval) {
+                clearInterval(seqInterval);
+                seqInterval = null;
+                icon.className = 'fa-solid fa-play text-[9px]';
+                label.textContent = 'PLAY GROOVE';
+                return;
+            }
+            if (!audioEnabled) toggleTactileAudio();
+            icon.className = 'fa-solid fa-stop text-[9px]';
+            label.textContent = 'STOP GROOVE';
+            triggerStudioPad(0);
+            seqStep = 1;
+            seqInterval = setInterval(() => {
+                triggerStudioPad(seqStep % 4);
+                seqStep++;
+            }, 950);
+        }
+
+        // Studio Waveform Visualizer
+        function initStudioWaveCanvas() {
+            const canvas = document.getElementById('studio-wave-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let phase = 0;
+            function draw() {
+                const w = (canvas.width = canvas.clientWidth || 320);
+                const h = (canvas.height = 54);
+                ctx.clearRect(0, 0, w, h);
+
+                ctx.strokeStyle = 'rgba(197, 160, 89, 0.75)';
+                ctx.lineWidth = 1.6;
+                ctx.beginPath();
+                for (let x = 0; x < w; x += 3) {
+                    const amp = (8 + waveEnergy * 16) * Math.sin((x / w) * Math.PI);
+                    const y = h / 2 + Math.sin(x * 0.045 + phase) * amp * Math.cos(x * 0.02 - phase * 0.6);
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                phase += 0.08 + waveEnergy * 0.14;
+                waveEnergy = Math.max(0.12, waveEnergy * 0.94);
+                requestAnimationFrame(draw);
+            }
+            requestAnimationFrame(draw);
+        }
+
+        let hoopScore = 0;
+        function takeCourtShot(btn) {
+            hoopScore += 3;
+            playTactileClick(740, 0.07);
+            document.getElementById('hoop-shot-label').textContent = `SWISH! +3 PTS (${hoopScore})`;
+            btn.classList.add('scale-105');
+            setTimeout(() => btn.classList.remove('scale-105'), 180);
+            showToast(`NOTHING BUT NET • SCORE: ${hoopScore} PTS`);
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* 11. 3D TILT PHYSICS, CLIPBOARD & AMBIENT DUST PARTICLES            */
+        /* ------------------------------------------------------------------ */
+        function copyContact(value, label) {
+            playTactileClick(640, 0.04);
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(value).catch(() => {});
+            }
+            showToast(`COPIED ${label.toUpperCase()}: ${value}`);
+        }
+
+        let toastTimer = null;
+        function showToast(msg) {
+            const toast = document.getElementById('portfolio-toast');
+            const text = document.getElementById('portfolio-toast-text');
+            if (!toast || !text) return;
+            text.textContent = msg;
+            toast.classList.remove('opacity-0', 'translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 2600);
+        }
+
+        function bind3DTiltCards() {
+            document.querySelectorAll('.paper-card, .obsidian-card').forEach((card) => {
+                if (card.dataset.tiltBound === 'true') return;
+                card.dataset.tiltBound = 'true';
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    card.style.setProperty('--card-mouse-x', `${x}px`);
+                    card.style.setProperty('--card-mouse-y', `${y}px`);
+                    if (card.classList.contains('paper-card')) {
+                        const rotY = ((x / rect.width) - 0.5) * 4.5;
+                        const rotX = (0.5 - (y / rect.height)) * 3.5;
+                        card.classList.add('is-hovering');
+                        card.style.transform = `perspective(1200px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+                    }
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.classList.remove('is-hovering');
+                    card.style.transform = '';
+                });
+            });
+        }
+
+        // Hero mouse parallax
+        window.addEventListener('mousemove', (e) => {
+            const nx = (e.clientX / window.innerWidth - 0.5) * 32;
+            const ny = (e.clientY / window.innerHeight - 0.5) * 24;
+            document.documentElement.style.setProperty('--hero-x', `${nx.toFixed(1)}px`);
+            document.documentElement.style.setProperty('--hero-y', `${ny.toFixed(1)}px`);
+        });
+
+        // Ambient Cinematic Gold Dust Motes
+        function initDustCanvas() {
+            const canvas = document.getElementById('cinematic-dust-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width = (canvas.width = window.innerWidth);
+            let height = (canvas.height = window.innerHeight);
+
+            window.addEventListener('resize', () => {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            });
+
+            const motes = Array.from({ length: 38 }, () => ({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: Math.random() * 1.6 + 0.4,
+                vx: (Math.random() - 0.5) * 0.22,
+                vy: -Math.random() * 0.28 - 0.06,
+                alpha: Math.random() * 0.45 + 0.12
+            }));
+
+            function tick() {
+                ctx.clearRect(0, 0, width, height);
+                for (const m of motes) {
+                    m.x += m.vx;
+                    m.y += m.vy;
+                    if (m.y < -10) m.y = height + 10;
+                    if (m.x < -10) m.x = width + 10;
+                    if (m.x > width + 10) m.x = -10;
+
+                    ctx.beginPath();
+                    ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(197, 160, 89, ${m.alpha})`;
+                    ctx.fill();
+                }
+                requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        // Initialize all interactive systems on load
+        window.addEventListener('DOMContentLoaded', () => {
+            setExecutiveLens('all');
+            renderExperienceSlips();
+            updateSimulator();
+            renderSkillsMatrix();
+            renderEducationCoursework();
+            initStudioWaveCanvas();
+            initDustCanvas();
+            bind3DTiltCards();
+        });
+    </script>
+</body>
+</html>
+

@@ -164,6 +164,9 @@ export default {
 
         if (env.ASSETS) {
           let assetRequest = request;
+          const trimmedAssetPath = url.pathname.replace(/\/+$/, '') || '/';
+          const lowerAssetPath = trimmedAssetPath.toLowerCase();
+
           if (isDedicatedAdminHost) {
             if (url.pathname === '/vatsom_premium_oils.html') {
               return jsonError(new NotFoundError('Route not found.'), env, requestId, requestOrigin);
@@ -173,9 +176,41 @@ export default {
               adminAssetUrl.pathname = '/admin-portal.html';
               assetRequest = new Request(adminAssetUrl.toString(), request);
             }
+          } else if (
+            lowerAssetPath === '/pratham/portfolio' ||
+            lowerAssetPath === '/pratham/portfolio.html' ||
+            lowerAssetPath === '/pratham' ||
+            lowerAssetPath === '/portfolio' ||
+            lowerAssetPath === '/portfolio.html'
+          ) {
+            const portfolioAssetUrl = new URL(request.url);
+            portfolioAssetUrl.pathname = '/portfolio.html';
+            assetRequest = new Request(portfolioAssetUrl.toString(), request);
+          } else if (lowerAssetPath.startsWith('/pratham/')) {
+            const segments = trimmedAssetPath.split('/').filter(Boolean);
+            const fileSegment = segments[segments.length - 1] || '';
+            if (fileSegment.toLowerCase() === 'vatsom_premium_oils.html') {
+              const secHeaders = buildSecurityHeaders(env, requestOrigin);
+              return new Response(null, {
+                status: 302,
+                headers: { ...secHeaders, Location: '/' }
+              });
+            }
+            const subAssetUrl = new URL(request.url);
+            subAssetUrl.pathname = `/${fileSegment}`;
+            assetRequest = new Request(subAssetUrl.toString(), request);
           }
 
-          const assetRes = await env.ASSETS.fetch(assetRequest);
+          let assetRes = await env.ASSETS.fetch(assetRequest);
+          // Unwrap internal Workers Assets html_handling 307/308 redirects so /Pratham/Portfolio stays on its clean URL with 200 OK
+          if (
+            (assetRes.status === 307 || assetRes.status === 308) &&
+            assetRes.headers.get('location')
+          ) {
+            const redirectTarget = new URL(assetRes.headers.get('location')!, assetRequest.url);
+            assetRes = await env.ASSETS.fetch(new Request(redirectTarget.toString(), request));
+          }
+
           const headers = new Headers(assetRes.headers);
           const secHeaders = buildSecurityHeaders(env, requestOrigin);
           for (const [k, v] of Object.entries(secHeaders)) {

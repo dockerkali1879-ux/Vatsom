@@ -86,9 +86,13 @@ describe('VATSOM Frontend Preservation & Regression Suite', () => {
     expect(existsSync(publicDir)).toBe(true);
     const files = readdirSync(publicDir).sort();
     expect(files).toEqual([
+      'Pratham_Vatsa_Resume.pdf',
       'admin-portal.html',
       'index.html',
       'paper_crumple_effect.js',
+      'portfolio.html',
+      'pratham_hero.jpg',
+      'pratham_portrait_crop.jpg',
       'vatsom_logo.png',
       'vatsom_premium_oils.html',
     ]);
