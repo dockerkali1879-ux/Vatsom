@@ -15,6 +15,7 @@ const filesToCopy = [
   'admin-portal.html',
   'portfolio.html',
   'paper_crumple_effect.js',
+  'vatsom-tailwind.css',
   'vatsom_logo.png',
   'pratham_hero.jpg',
   'pratham_portrait_crop.jpg',

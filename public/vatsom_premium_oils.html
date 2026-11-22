@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vatsom — Cherished Beyond Time | British Gentlemen's Haute Parfumerie</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Pre-Compiled Tailwind CSS (Zero runtime JS compiler overhead) -->
+    <link rel="stylesheet" href="vatsom-tailwind.css">
     <!-- Lenis Smooth Scroll -->
     <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
     <!-- [EXPERIMENTAL TEST: PaperCrumple 3D Removal] Remove these 2 scripts to fallback to standard removal -->
@@ -22,25 +22,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        paper: '#f4f1ea',
-                        paperDark: '#e5dec9',
-                        paperEdge: '#d6ccb2',
-                        charcoal: '#121212',
-                        accentGold: '#c5a059',
-                        waxRed: '#7c1d1d',
-                    },
-                    fontFamily: {
-                        cinzel: ['Cinzel', 'serif'],
-                        sans: ['Plus Jakarta Sans', 'sans-serif'],
-                        serif: ['Playfair Display', 'serif'],
-                    }
-                }
+        window.VATSOM_THEME = {
+            colors: {
+                paper: '#f4f1ea',
+                paperDark: '#e5dec9',
+                paperEdge: '#d6ccb2',
+                charcoal: '#121212',
+                accentGold: '#c5a059',
+                waxRed: '#7c1d1d',
             }
-        }
+        };
     </script>
     <style>
         /* Smooth Scroll & Base Setup */
@@ -571,7 +562,7 @@
         <!-- Wax Seal Stamp Feedback inside Drawer -->
         <div id="wax-seal-badge" class="hidden py-4 px-6 bg-paperDark/90 border-t border-charcoal/15 flex items-center justify-center space-x-3">
             <div class="w-10 h-10 rounded-full bg-waxRed text-paper flex items-center justify-center font-cinzel font-bold text-xs shadow-lg border-2 border-accentGold/60 stamp-animate">
-                V
+                <img src="vatsom_logo.png" alt="V" class="w-6 h-4 object-contain">
             </div>
             <span class="font-cinzel text-xs font-bold tracking-widest text-waxRed uppercase">Wax Sealed &amp; Recorded</span>
         </div>
@@ -1437,11 +1428,22 @@
 
     <!-- Application Script -->
     <script>
-        // Pre-cached Studio Chiaroscuro 3-Plate Renderer (Cached once per perfume/plate to prevent re-encoding during scroll or slide)
+        // Pre-cached Studio Chiaroscuro 3-Plate Renderer (Strict XML escaping so all 6 perfume bottles & 18 plates render 100% reliably)
         const studioPlateCache = new Map();
 
+        function escapeSvgXml(val) {
+            return String(val ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&apos;');
+        }
+
         function buildPerfumeFlaconStudioSvg(product, plateIndex = 0) {
-            const cacheKey = `${product?.id || 1}:${plateIndex}`;
+            const pid = Number(product?.id) || 1;
+            const pIdx = Number(plateIndex) || 0;
+            const cacheKey = `p${pid}_${pIdx}`;
             if (studioPlateCache.has(cacheKey)) return studioPlateCache.get(cacheKey);
 
             const palettes = {
@@ -1452,14 +1454,18 @@
                 5: { bg1: '#141310', bg2: '#050504', glow: '#cbb06a', liquid: '#5c4d26', cap: '#c5a059', roman: 'V', crest: 'ORRIS & BLACK INK' },
                 6: { bg1: '#180f16', bg2: '#050305', glow: '#a96888', liquid: '#52233b', cap: '#111111', roman: 'VI', crest: 'BLACK ORCHID & PLUM' }
             };
-            const pal = palettes[product.id] || palettes[1];
-            const safeTitle = String(product.name || 'VATSOM').toUpperCase().replace(/&/g, '&amp;');
-            const noteParts = String(product.notes || 'Extrait de Parfum | Mayfair Reserve').split('|');
-            const topNote = (noteParts[0] || '').trim().replace(/&/g, '&amp;');
-            const heartBase = (noteParts[1] || topNote).trim().replace(/&/g, '&amp;');
+            const pal = palettes[pid] || palettes[1];
+            const safeTitle = escapeSvgXml(String(product?.name || 'VATSOM').toUpperCase().slice(0, 18));
+            const safeCrest = escapeSvgXml(pal.crest);
+            const safeRoman = escapeSvgXml(pal.roman);
+            const safeVol = escapeSvgXml(product?.volume || '100ml');
+            const safeExtraction = escapeSvgXml(String(product?.extraction || '120-DAY OAK CASK').toUpperCase().slice(0, 34));
+            const noteParts = String(product?.notes || 'Extrait de Parfum | Mayfair Reserve').split('|');
+            const topNote = escapeSvgXml((noteParts[0] || '').trim().slice(0, 42));
+            const heartBase = escapeSvgXml((noteParts[1] || noteParts[0] || '').trim().slice(0, 38));
 
             let innerGraphic = '';
-            if (plateIndex === 0) {
+            if (pIdx === 0) {
                 // Plate 1: Full-Bleed Cut-Crystal Flacon Portrait
                 innerGraphic = `
                 <ellipse cx="300" cy="400" rx="170" ry="18" fill="#000000" opacity="0.78"/>
@@ -1475,14 +1481,14 @@
                     <path d="M375 152 L375 368" stroke="#c5a059" stroke-opacity="0.28" stroke-width="1.5" stroke-linecap="round"/>
                     <rect x="236" y="182" width="128" height="142" fill="#f4f1ea" stroke="url(#gold-${cacheKey})" stroke-width="2"/>
                     <rect x="241" y="187" width="118" height="132" fill="none" stroke="#121212" stroke-opacity="0.28" stroke-width="0.8"/>
-                    <text x="300" y="210" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="9" font-weight="700" fill="#7c1d1d" letter-spacing="3">FOLIO ${pal.roman}</text>
+                    <text x="300" y="210" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="9" font-weight="700" fill="#7c1d1d" letter-spacing="3">FOLIO ${safeRoman}</text>
                     <text x="300" y="234" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="14" font-weight="800" fill="#121212" letter-spacing="4">VATSOM</text>
                     <line x1="262" y1="244" x2="338" y2="244" stroke="#c5a059" stroke-width="1"/>
-                    <text x="300" y="266" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="11" font-weight="700" fill="#121212" letter-spacing="2.2">${safeTitle.slice(0, 18)}</text>
-                    <text x="300" y="284" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="7.5" fill="#4a4338">${pal.crest}</text>
-                    <text x="300" y="308" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="7.5" font-weight="700" fill="#121212" letter-spacing="2">EXTRAIT • MAYFAIR</text>
+                    <text x="300" y="266" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="11" font-weight="700" fill="#121212" letter-spacing="2.2">${safeTitle}</text>
+                    <text x="300" y="284" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="7.5" fill="#4a4338">${safeCrest}</text>
+                    <text x="300" y="308" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="7.5" font-weight="700" fill="#121212" letter-spacing="2">EXTRAIT - MAYFAIR</text>
                 </g>`;
-            } else if (plateIndex === 1) {
+            } else if (pIdx === 1) {
                 // Plate 2: Olfactory Pyramid & Accord Study
                 innerGraphic = `
                 <g transform="translate(0, 10)">
@@ -1494,8 +1500,8 @@
                     <text x="300" y="176" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="8.5" font-weight="700" fill="#f4f1ea" letter-spacing="2">TOP ACCORD</text>
                     <text x="300" y="220" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="8.5" font-weight="700" fill="#c5a059" letter-spacing="2">HEART NOTES</text>
                     <text x="300" y="260" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="8.5" font-weight="700" fill="#f4f1ea" letter-spacing="2">RESIN BASE</text>
-                    <text x="300" y="382" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="11" font-weight="700" fill="#c5a059" letter-spacing="3">${safeTitle} • OLFACTORY PYRAMID</text>
-                    <text x="300" y="404" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#f4f1ea" opacity="0.78">${topNote.slice(0, 42)}</text>
+                    <text x="300" y="382" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="11" font-weight="700" fill="#c5a059" letter-spacing="3">${safeTitle} - OLFACTORY PYRAMID</text>
+                    <text x="300" y="404" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#f4f1ea" opacity="0.78">${topNote}</text>
                 </g>`;
             } else {
                 // Plate 3: 120-Day Oak Cask & Crimson Wax Seal Dossier
@@ -1506,17 +1512,17 @@
                     <text x="300" y="134" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="10" font-weight="700" fill="#7c1d1d" letter-spacing="3.5">VATSOM MAYFAIR ARCHIVE</text>
                     <text x="300" y="162" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="17" font-weight="800" fill="#121212" letter-spacing="4">${safeTitle}</text>
                     <line x1="220" y1="176" x2="380" y2="176" stroke="#c5a059" stroke-width="1.2"/>
-                    <text x="300" y="202" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#2b2620">${heartBase.slice(0, 38)}</text>
-                    <text x="300" y="224" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="8.5" font-weight="700" fill="#121212" letter-spacing="2">${String(product.extraction || '120-DAY OAK CASK').toUpperCase()}</text>
+                    <text x="300" y="202" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#2b2620">${heartBase}</text>
+                    <text x="300" y="224" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="8.5" font-weight="700" fill="#121212" letter-spacing="2">${safeExtraction}</text>
                     <circle cx="300" cy="278" r="28" fill="#7c1d1d" stroke="url(#gold-${cacheKey})" stroke-width="2"/>
                     <circle cx="300" cy="278" r="21" fill="none" stroke="#c5a059" stroke-opacity="0.55" stroke-width="0.9"/>
-                    <text x="300" y="284" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="15" font-weight="800" fill="#f4f1ea">V</text>
+                    <polygon points="286,271 294,265 300,276 306,265 314,271 308,269 300,289 292,269" fill="url(#gold-${cacheKey})"/>
                     <text x="300" y="384" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="11" font-weight="700" fill="#c5a059" letter-spacing="3">HAND-NUMBERED WAX SEAL</text>
-                    <text x="300" y="405" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#f4f1ea" opacity="0.78">Cherished Beyond Time • ${product.volume} Flacon</text>
+                    <text x="300" y="405" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#f4f1ea" opacity="0.78">Cherished Beyond Time - ${safeVol} Flacon</text>
                 </g>`;
             }
 
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 460" width="100%" height="100%">
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 460" width="600" height="460">
                 <defs>
                     <radialGradient id="g-${cacheKey}" cx="50%" cy="54%" r="58%">
                         <stop offset="0%" stop-color="${pal.glow}" stop-opacity="0.32"/>
@@ -1539,7 +1545,7 @@
                 <rect width="600" height="460" fill="url(#g-${cacheKey})"/>
                 ${innerGraphic}
             </svg>`;
-            const uri = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+            const uri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
             studioPlateCache.set(cacheKey, uri);
             return uri;
         }

@@ -94,6 +94,7 @@ describe('VATSOM Frontend Preservation & Regression Suite', () => {
       'portfolio.html',
       'pratham_hero.jpg',
       'pratham_portrait_crop.jpg',
+      'vatsom-tailwind.css',
       'vatsom_logo.png',
       'vatsom_premium_oils.html',
     ]);
