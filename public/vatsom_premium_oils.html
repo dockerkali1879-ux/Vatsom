@@ -114,15 +114,15 @@
             transform: translate(-6px, 11px) rotate(-1.6deg);
         }
 
-        /* Realistic Page Card Physics */
+        /* Realistic Page Card Physics (GPU layer promoted only while hovering to eliminate scroll lag) */
         .paper-card {
             position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-            will-change: transform;
+            transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.32s cubic-bezier(0.22, 1, 0.36, 1);
             overflow: hidden;
+            contain: layout style;
         }
         .paper-card.is-hovering {
+            will-change: transform;
             transition: transform 0.08s ease-out, box-shadow 0.25s ease-out !important;
             transition-delay: 0ms !important;
         }
@@ -131,17 +131,17 @@
         .paper-card .paper-sheen {
             position: absolute;
             inset: 0;
-            background: radial-gradient(550px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,255,255,0.45), transparent 55%);
+            background: radial-gradient(500px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,255,255,0.42), transparent 55%);
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.25s ease;
             pointer-events: none;
             z-index: 2;
         }
-        .paper-card:hover .paper-sheen {
+        .paper-card.is-hovering .paper-sheen {
             opacity: 1;
         }
 
-        /* Subtle Top-Left Corner Fold Accent (avoids overlapping bottom-right action button) */
+        /* Subtle Bottom-Right Corner Fold Accent */
         .paper-corner-curl {
             position: absolute;
             bottom: 0;
@@ -150,7 +150,7 @@
             height: 0px;
             background: linear-gradient(135deg, #d8ceb4 0%, #f4f1ea 48%, #c9bda0 50%, #1a1a1a 52%, #121212 100%);
             box-shadow: -3px -3px 8px rgba(0,0,0,0.22);
-            transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1), height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
             z-index: 20;
             pointer-events: none;
         }
@@ -163,15 +163,14 @@
         .paper-unfold {
             opacity: 0;
             transform-origin: top center;
-            transform: perspective(1400px) rotateX(-24deg) translateY(30px) scale(0.97);
+            transform: perspective(1400px) rotateX(-18deg) translateY(24px) scale(0.98);
             transition: 
-                opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-            will-change: transform, opacity;
+                opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .paper-unfold.is-visible {
             opacity: 1;
-            transform: perspective(1400px) rotateX(0deg) translateY(0px) scale(1);
+            transform: none;
         }
 
         /* Scroll Velocity Paper Flutter */
@@ -285,12 +284,11 @@
             perspective: 1800px;
             cursor: pointer;
             user-select: none;
-            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
-            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.75));
+            transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
             overflow: visible;
         }
         .origami-logo-wrap.is-hovering {
-            transition: transform 0.08s ease-out, filter 0.2s ease-out !important;
+            transition: transform 0.08s ease-out !important;
         }
         .origami-unfold-viewport {
             position: relative;
@@ -624,34 +622,43 @@
                         <span id="modal-folio-code" class="font-cinzel text-[10px] tracking-[0.25em] text-paper/50 uppercase">FOLIO NO. 01</span>
                     </div>
 
-                    <!-- Primary Image Display Stage -->
-                    <div id="modal-image-stage" class="relative my-auto py-8 flex flex-col items-center justify-center min-h-[260px] border border-paper/10 bg-neutral-950/60 p-6 group">
+                    <!-- Primary 3-Image Slider Stage -->
+                    <div id="modal-image-stage" class="relative my-auto flex flex-col items-center justify-center min-h-[290px] border border-paper/10 bg-neutral-950/80 overflow-hidden select-none group">
                         <!-- Corner Frame Accents -->
-                        <div class="absolute top-2 left-2 w-3 h-3 border-t border-l border-accentGold/60"></div>
-                        <div class="absolute top-2 right-2 w-3 h-3 border-t border-r border-accentGold/60"></div>
-                        <div class="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-accentGold/60"></div>
-                        <div class="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-accentGold/60"></div>
+                        <div class="absolute top-2 left-2 w-3 h-3 border-t border-l border-accentGold/60 z-20 pointer-events-none"></div>
+                        <div class="absolute top-2 right-2 w-3 h-3 border-t border-r border-accentGold/60 z-20 pointer-events-none"></div>
+                        <div class="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-accentGold/60 z-20 pointer-events-none"></div>
+                        <div class="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-accentGold/60 z-20 pointer-events-none"></div>
 
-                        <!-- Dynamic Image or Architectural Vessel Placeholder -->
-                        <div id="modal-visual-content" class="flex flex-col items-center justify-center text-center transition-all duration-300">
-                            <!-- Populated via JS -->
+                        <!-- Elegant Left < Arrow -->
+                        <button type="button" onclick="stepModalPlate(-1)" aria-label="Previous image" class="absolute left-2.5 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/70 hover:bg-charcoal border border-accentGold/35 hover:border-accentGold text-paper hover:text-accentGold flex items-center justify-center transition-all shadow-lg active:scale-95">
+                            <i class="fa-solid fa-chevron-left text-[11px]"></i>
+                        </button>
+
+                        <!-- Elegant Right > Arrow -->
+                        <button type="button" onclick="stepModalPlate(1)" aria-label="Next image" class="absolute right-2.5 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/70 hover:bg-charcoal border border-accentGold/35 hover:border-accentGold text-paper hover:text-accentGold flex items-center justify-center transition-all shadow-lg active:scale-95">
+                            <i class="fa-solid fa-chevron-right text-[11px]"></i>
+                        </button>
+
+                        <!-- 3-Image Horizontal Sliding Track -->
+                        <div id="modal-visual-content" class="w-full overflow-hidden">
+                            <!-- Populated via JS with 3 sliding plates -->
                         </div>
                     </div>
 
-                        <!-- Gallery View Selector Thumbnails -->
-                    <div class="mt-5 z-10">
-                        <div class="text-[10px] font-cinzel tracking-[0.2em] text-paper/50 uppercase mb-2 text-center">Visual Plates (Image Slots Ready)</div>
-                        <div class="grid grid-cols-3 gap-2.5" id="modal-gallery-thumbs">
-                            <button onclick="switchModalPlate(0)" data-plate="0" class="modal-plate-btn py-2 px-2 border border-accentGold bg-paper/10 text-paper font-cinzel text-[10px] tracking-wider uppercase transition-all">
-                                I. Flacon
-                            </button>
-                            <button onclick="switchModalPlate(1)" data-plate="1" class="modal-plate-btn py-2 px-2 border border-paper/15 hover:border-paper/40 text-paper/60 font-cinzel text-[10px] tracking-wider uppercase transition-all">
-                                II. Accord
-                            </button>
-                            <button onclick="switchModalPlate(2)" data-plate="2" class="modal-plate-btn py-2 px-2 border border-paper/15 hover:border-paper/40 text-paper/60 font-cinzel text-[10px] tracking-wider uppercase transition-all">
-                                III. Sillage
-                            </button>
+                    <!-- Minimalist Black / Golden Dots & Elegant < > Arrows -->
+                    <div class="mt-5 z-10 flex items-center justify-center space-x-4">
+                        <button type="button" onclick="stepModalPlate(-1)" aria-label="Previous slide" class="text-paper/55 hover:text-accentGold transition-colors px-1.5 py-1 font-cinzel text-xs">
+                            &lt;
+                        </button>
+                        <div class="flex items-center justify-center space-x-3" id="modal-gallery-thumbs">
+                            <button type="button" onclick="switchModalPlate(0)" data-plate="0" aria-label="Image 1" class="modal-plate-btn w-2.5 h-2.5 rounded-full bg-accentGold border border-accentGold scale-125 shadow-[0_0_8px_rgba(197,160,89,0.75)] transition-all duration-300"></button>
+                            <button type="button" onclick="switchModalPlate(1)" data-plate="1" aria-label="Image 2" class="modal-plate-btn w-2.5 h-2.5 rounded-full bg-black border border-paper/35 hover:border-accentGold transition-all duration-300"></button>
+                            <button type="button" onclick="switchModalPlate(2)" data-plate="2" aria-label="Image 3" class="modal-plate-btn w-2.5 h-2.5 rounded-full bg-black border border-paper/35 hover:border-accentGold transition-all duration-300"></button>
                         </div>
+                        <button type="button" onclick="stepModalPlate(1)" aria-label="Next slide" class="text-paper/55 hover:text-accentGold transition-colors px-1.5 py-1 font-cinzel text-xs">
+                            &gt;
+                        </button>
                     </div>
                 </div>
 
@@ -1163,19 +1170,14 @@
             </div>
 
             <!-- Unfolding Parchment Banner (Generous inset padding so text never touches angled edges) -->
-            <div id="site-hero-banner" class="paper-unfold inline-block mb-7 px-10 sm:px-14 py-2.5 ribbed-paper text-charcoal font-cinzel text-[10px] sm:text-[11px] font-semibold tracking-[0.26em] uppercase clip-triangle-hero shadow-lg">
+            <div id="site-hero-banner" class="paper-unfold inline-block mb-10 px-10 sm:px-14 py-2.5 ribbed-paper text-charcoal font-cinzel text-[10px] sm:text-[11px] font-semibold tracking-[0.26em] uppercase clip-triangle-hero shadow-lg">
                 Cherished Beyond Time.
             </div>
-            
-            <h1 id="site-hero-title" class="paper-unfold font-cinzel text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-8 text-paper leading-none" style="transition-delay: 100ms;">
-                SOVEREIGN <span class="italic font-serif font-light text-accentGold">PARFUMS</span> OF DISTINCTION
-            </h1>
-            
-            <p id="site-hero-subtitle" class="paper-unfold font-sans text-paper/70 text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed mb-12" style="transition-delay: 200ms;">
-                Haute Parfumerie composed in the tailoring heritage of Mayfair and St. James&rsquo;s. Aged in charred oak, inscribed on ribbed parchment, and sealed in heavy obsidian crystal for the British gentleman.
-            </p>
 
-            <div class="paper-unfold flex flex-col sm:flex-row items-center justify-center gap-5" style="transition-delay: 300ms;">
+            <h1 id="site-hero-title" class="hidden"></h1>
+            <p id="site-hero-subtitle" class="hidden"></p>
+
+            <div class="paper-unfold flex flex-col sm:flex-row items-center justify-center gap-5" style="transition-delay: 120ms;">
                 <a href="#catalogue" class="w-full sm:w-auto px-9 py-4 ribbed-paper text-charcoal font-cinzel font-bold tracking-widest hover:bg-paperDark hover:-translate-y-0.5 transition-all flex items-center justify-center space-x-3 shadow-2xl">
                     <span>UNROLL CATALOGUE</span>
                     <i class="fa-solid fa-arrow-down text-xs animate-bounce"></i>
@@ -1435,174 +1437,214 @@
 
     <!-- Application Script -->
     <script>
-        // Bespoke Studio Chiaroscuro Flacon Renderer (Provides a rich borderless studio bottle portrait when no external photo URL is set)
-        function buildPerfumeFlaconStudioSvg(product) {
+        // Pre-cached Studio Chiaroscuro 3-Plate Renderer (Cached once per perfume/plate to prevent re-encoding during scroll or slide)
+        const studioPlateCache = new Map();
+
+        function buildPerfumeFlaconStudioSvg(product, plateIndex = 0) {
+            const cacheKey = `${product?.id || 1}:${plateIndex}`;
+            if (studioPlateCache.has(cacheKey)) return studioPlateCache.get(cacheKey);
+
             const palettes = {
-                1: { bg1: '#17120e', bg2: '#070605', glow: '#c5a059', liquid: '#8c5319', cap: '#c5a059', roman: 'I' },
-                2: { bg1: '#111518', bg2: '#060708', glow: '#d4b475', liquid: '#6e552c', cap: '#1a1a1a', roman: 'II' },
-                3: { bg1: '#1a100e', bg2: '#050404', glow: '#a8322d', liquid: '#591c17', cap: '#c5a059', roman: 'III' },
-                4: { bg1: '#101714', bg2: '#050706', glow: '#9eb89e', liquid: '#4f684e', cap: '#c5a059', roman: 'IV' },
-                5: { bg1: '#181115', bg2: '#060405', glow: '#c58b59', liquid: '#6b3419', cap: '#161616', roman: 'V' },
-                6: { bg1: '#15140f', bg2: '#060604', glow: '#cbb06a', liquid: '#5e5028', cap: '#c5a059', roman: 'VI' }
+                1: { bg1: '#161410', bg2: '#060504', glow: '#d8be82', liquid: '#8a6b32', cap: '#c5a059', roman: 'I', crest: 'SACRED SANDALWOOD' },
+                2: { bg1: '#17110d', bg2: '#060504', glow: '#c5a059', liquid: '#7c4318', cap: '#111111', roman: 'II', crest: 'ROYAL ASSAM OUD' },
+                3: { bg1: '#1c0e0e', bg2: '#060303', glow: '#b8332a', liquid: '#691914', cap: '#c5a059', roman: 'III', crest: 'SAFFRON & DAMASK' },
+                4: { bg1: '#0f1617', bg2: '#040607', glow: '#8fa9ad', liquid: '#3b5459', cap: '#161616', roman: 'IV', crest: 'HIGHLAND PEAT & SEA' },
+                5: { bg1: '#141310', bg2: '#050504', glow: '#cbb06a', liquid: '#5c4d26', cap: '#c5a059', roman: 'V', crest: 'ORRIS & BLACK INK' },
+                6: { bg1: '#180f16', bg2: '#050305', glow: '#a96888', liquid: '#52233b', cap: '#111111', roman: 'VI', crest: 'BLACK ORCHID & PLUM' }
             };
             const pal = palettes[product.id] || palettes[1];
             const safeTitle = String(product.name || 'VATSOM').toUpperCase().replace(/&/g, '&amp;');
-            const safeSub = String((product.notes || '').split('|')[0] || 'EXTRAIT DE PARFUM').trim().replace(/&/g, '&amp;');
+            const noteParts = String(product.notes || 'Extrait de Parfum | Mayfair Reserve').split('|');
+            const topNote = (noteParts[0] || '').trim().replace(/&/g, '&amp;');
+            const heartBase = (noteParts[1] || topNote).trim().replace(/&/g, '&amp;');
+
+            let innerGraphic = '';
+            if (plateIndex === 0) {
+                // Plate 1: Full-Bleed Cut-Crystal Flacon Portrait
+                innerGraphic = `
+                <ellipse cx="300" cy="400" rx="170" ry="18" fill="#000000" opacity="0.78"/>
+                <line x1="80" y1="398" x2="520" y2="398" stroke="#c5a059" stroke-opacity="0.22" stroke-width="1"/>
+                <g transform="translate(0, 6)">
+                    <rect x="272" y="54" width="56" height="42" rx="2" fill="${pal.cap === '#c5a059' ? `url(#gold-${cacheKey})` : '#111111'}" stroke="url(#gold-${cacheKey})" stroke-width="1.5"/>
+                    <line x1="272" y1="66" x2="328" y2="66" stroke="#121212" stroke-opacity="0.45" stroke-width="1.2"/>
+                    <rect x="280" y="96" width="40" height="18" fill="url(#gold-${cacheKey})"/>
+                    <rect x="275" y="112" width="50" height="7" rx="1" fill="#8a6a2f"/>
+                    <path d="M275 119 L216 148 L216 374 C216 382 222 388 230 388 L370 388 C378 388 384 382 384 374 L384 148 L325 119 Z" fill="url(#glass-${cacheKey})" stroke="url(#gold-${cacheKey})" stroke-width="1.5"/>
+                    <path d="M222 358 L378 358 L374 382 L226 382 Z" fill="#c5a059" fill-opacity="0.16"/>
+                    <path d="M225 152 L225 368" stroke="#ffffff" stroke-opacity="0.24" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M375 152 L375 368" stroke="#c5a059" stroke-opacity="0.28" stroke-width="1.5" stroke-linecap="round"/>
+                    <rect x="236" y="182" width="128" height="142" fill="#f4f1ea" stroke="url(#gold-${cacheKey})" stroke-width="2"/>
+                    <rect x="241" y="187" width="118" height="132" fill="none" stroke="#121212" stroke-opacity="0.28" stroke-width="0.8"/>
+                    <text x="300" y="210" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="9" font-weight="700" fill="#7c1d1d" letter-spacing="3">FOLIO ${pal.roman}</text>
+                    <text x="300" y="234" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="14" font-weight="800" fill="#121212" letter-spacing="4">VATSOM</text>
+                    <line x1="262" y1="244" x2="338" y2="244" stroke="#c5a059" stroke-width="1"/>
+                    <text x="300" y="266" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="11" font-weight="700" fill="#121212" letter-spacing="2.2">${safeTitle.slice(0, 18)}</text>
+                    <text x="300" y="284" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="7.5" fill="#4a4338">${pal.crest}</text>
+                    <text x="300" y="308" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="7.5" font-weight="700" fill="#121212" letter-spacing="2">EXTRAIT • MAYFAIR</text>
+                </g>`;
+            } else if (plateIndex === 1) {
+                // Plate 2: Olfactory Pyramid & Accord Study
+                innerGraphic = `
+                <g transform="translate(0, 10)">
+                    <circle cx="300" cy="215" r="138" fill="none" stroke="url(#gold-${cacheKey})" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.65"/>
+                    <circle cx="300" cy="215" r="108" fill="#090909" fill-opacity="0.7" stroke="url(#gold-${cacheKey})" stroke-width="1.5"/>
+                    <polygon points="300,118 386,274 214,274" fill="url(#glass-${cacheKey})" stroke="url(#gold-${cacheKey})" stroke-width="1.8"/>
+                    <line x1="256" y1="198" x2="344" y2="198" stroke="#c5a059" stroke-opacity="0.55" stroke-width="1"/>
+                    <line x1="235" y1="236" x2="365" y2="236" stroke="#c5a059" stroke-opacity="0.55" stroke-width="1"/>
+                    <text x="300" y="176" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="8.5" font-weight="700" fill="#f4f1ea" letter-spacing="2">TOP ACCORD</text>
+                    <text x="300" y="220" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="8.5" font-weight="700" fill="#c5a059" letter-spacing="2">HEART NOTES</text>
+                    <text x="300" y="260" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="8.5" font-weight="700" fill="#f4f1ea" letter-spacing="2">RESIN BASE</text>
+                    <text x="300" y="382" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="11" font-weight="700" fill="#c5a059" letter-spacing="3">${safeTitle} • OLFACTORY PYRAMID</text>
+                    <text x="300" y="404" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#f4f1ea" opacity="0.78">${topNote.slice(0, 42)}</text>
+                </g>`;
+            } else {
+                // Plate 3: 120-Day Oak Cask & Crimson Wax Seal Dossier
+                innerGraphic = `
+                <g transform="translate(0, 8)">
+                    <rect x="176" y="88" width="248" height="248" rx="4" fill="#f4f1ea" stroke="url(#gold-${cacheKey})" stroke-width="2.5"/>
+                    <rect x="186" y="98" width="228" height="228" fill="none" stroke="#121212" stroke-opacity="0.25" stroke-width="1"/>
+                    <text x="300" y="134" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="10" font-weight="700" fill="#7c1d1d" letter-spacing="3.5">VATSOM MAYFAIR ARCHIVE</text>
+                    <text x="300" y="162" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="17" font-weight="800" fill="#121212" letter-spacing="4">${safeTitle}</text>
+                    <line x1="220" y1="176" x2="380" y2="176" stroke="#c5a059" stroke-width="1.2"/>
+                    <text x="300" y="202" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#2b2620">${heartBase.slice(0, 38)}</text>
+                    <text x="300" y="224" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="8.5" font-weight="700" fill="#121212" letter-spacing="2">${String(product.extraction || '120-DAY OAK CASK').toUpperCase()}</text>
+                    <circle cx="300" cy="278" r="28" fill="#7c1d1d" stroke="url(#gold-${cacheKey})" stroke-width="2"/>
+                    <circle cx="300" cy="278" r="21" fill="none" stroke="#c5a059" stroke-opacity="0.55" stroke-width="0.9"/>
+                    <text x="300" y="284" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="15" font-weight="800" fill="#f4f1ea">V</text>
+                    <text x="300" y="384" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="11" font-weight="700" fill="#c5a059" letter-spacing="3">HAND-NUMBERED WAX SEAL</text>
+                    <text x="300" y="405" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="10" fill="#f4f1ea" opacity="0.78">Cherished Beyond Time • ${product.volume} Flacon</text>
+                </g>`;
+            }
+
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 460" width="100%" height="100%">
                 <defs>
-                    <radialGradient id="g-${product.id}" cx="50%" cy="54%" r="58%">
+                    <radialGradient id="g-${cacheKey}" cx="50%" cy="54%" r="58%">
                         <stop offset="0%" stop-color="${pal.glow}" stop-opacity="0.32"/>
                         <stop offset="48%" stop-color="${pal.bg1}" stop-opacity="0.95"/>
                         <stop offset="100%" stop-color="${pal.bg2}" stop-opacity="1"/>
                     </radialGradient>
-                    <linearGradient id="glass-${product.id}" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <linearGradient id="glass-${cacheKey}" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"/>
                         <stop offset="14%" stop-color="#0a0a0a" stop-opacity="0.88"/>
                         <stop offset="50%" stop-color="${pal.liquid}" stop-opacity="0.65"/>
                         <stop offset="86%" stop-color="#080808" stop-opacity="0.92"/>
                         <stop offset="100%" stop-color="#c5a059" stop-opacity="0.28"/>
                     </linearGradient>
-                    <linearGradient id="gold-${product.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <linearGradient id="gold-${cacheKey}" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stop-color="#f1d799"/>
                         <stop offset="50%" stop-color="#c5a059"/>
                         <stop offset="100%" stop-color="#6e521f"/>
                     </linearGradient>
                 </defs>
-                <!-- Full-Bleed Borderless Obsidian Studio Backdrop -->
-                <rect width="600" height="460" fill="url(#g-${product.id})"/>
-                <!-- Subtle Pedestal Horizon Reflection -->
-                <ellipse cx="300" cy="400" rx="170" ry="18" fill="#000000" opacity="0.78"/>
-                <line x1="80" y1="398" x2="520" y2="398" stroke="#c5a059" stroke-opacity="0.22" stroke-width="1"/>
-                <!-- Heavy Cut-Crystal Flacon Silhouette -->
-                <g transform="translate(0, 6)">
-                    <!-- Monolithic Cap -->
-                    <rect x="272" y="54" width="56" height="42" rx="2" fill="${pal.cap === '#c5a059' ? `url(#gold-${product.id})` : '#111111'}" stroke="url(#gold-${product.id})" stroke-width="1.5"/>
-                    <line x1="272" y1="66" x2="328" y2="66" stroke="#121212" stroke-opacity="0.45" stroke-width="1.2"/>
-                    <!-- Atomizer Neck & Collar -->
-                    <rect x="280" y="96" width="40" height="18" fill="url(#gold-${product.id})"/>
-                    <rect x="275" y="112" width="50" height="7" rx="1" fill="#8a6a2f"/>
-                    <!-- Crystal Shoulders & Flacon Body -->
-                    <path d="M275 119 L216 148 L216 374 C216 382 222 388 230 388 L370 388 C378 388 384 382 384 374 L384 148 L325 119 Z" fill="url(#glass-${product.id})" stroke="url(#gold-${product.id})" stroke-width="1.5"/>
-                    <!-- Inner Heavy Crystal Base Thickness -->
-                    <path d="M222 358 L378 358 L374 382 L226 382 Z" fill="#c5a059" fill-opacity="0.16"/>
-                    <!-- Left & Right Bevel Specular Highlights -->
-                    <path d="M225 152 L225 368" stroke="#ffffff" stroke-opacity="0.24" stroke-width="2.5" stroke-linecap="round"/>
-                    <path d="M375 152 L375 368" stroke="#c5a059" stroke-opacity="0.28" stroke-width="1.5" stroke-linecap="round"/>
-                    <!-- Ribbed Parchment & Gold Plaque Label on Flacon -->
-                    <rect x="236" y="182" width="128" height="142" fill="#f4f1ea" stroke="url(#gold-${product.id})" stroke-width="2"/>
-                    <rect x="241" y="187" width="118" height="132" fill="none" stroke="#121212" stroke-opacity="0.28" stroke-width="0.8"/>
-                    <text x="300" y="210" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="9" font-weight="700" fill="#7c1d1d" letter-spacing="3">FOLIO ${pal.roman}</text>
-                    <text x="300" y="234" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="14" font-weight="800" fill="#121212" letter-spacing="4">VATSOM</text>
-                    <line x1="262" y1="244" x2="338" y2="244" stroke="#c5a059" stroke-width="1"/>
-                    <text x="300" y="264" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="8.2" font-weight="700" fill="#121212" letter-spacing="1.2">${safeTitle.slice(0, 22)}</text>
-                    <text x="300" y="282" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="7.5" fill="#4a4338">${safeSub.slice(0, 26)}</text>
-                    <text x="300" y="308" text-anchor="middle" font-family="Cinzel, Georgia, serif" font-size="7.5" font-weight="700" fill="#121212" letter-spacing="2">EXTRAIT • MAYFAIR</text>
-                </g>
+                <rect width="600" height="460" fill="url(#g-${cacheKey})"/>
+                ${innerGraphic}
             </svg>`;
-            return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+            const uri = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+            studioPlateCache.set(cacheKey, uri);
+            return uri;
         }
 
-        // Starting British Gentlemen Haute Parfumerie Catalogue (Add custom photo URLs into `image` or `images: []`, or click "SET IMAGE" on any card)
+        // First Catalogue: Buddha, Sovereign, Kama, Wanderer, Creator, Enchantress
         const products = [
             {
                 id: 1,
-                name: "Mayfair Reserve Extrait",
-                category: "Extrait de Parfum • 36%",
-                filterTag: "Edible",
-                price: 240.00,
+                name: "Buddha",
+                category: "Extrait de Parfum • 34%",
+                filterTag: "Aromatic",
+                price: 245.00,
                 volume: "100ml",
-                notes: "Aged Speyside Single Malt | English Bridle Leather, Smoked Cedar & Ambergris",
-                description: "An evening portrait of a private St. James’s study—warm oak-aged whisky, hand-stitched saddle leather, and dry fireplace tobacco.",
-                longDescription: "Composed in homage to the wood-panelled drawing rooms of Mayfair, Mayfair Reserve opens with a crisp measure of 18-year Speyside single malt and charred bergamot rind before descending into supple English bridle leather, Madagascar black vanilla, and smoky Atlas cedarwood. Macerated for 120 days in seasoned oak casks to achieve an unhurried, commanding trail.",
-                origin: "Mayfair & Speyside, Britain",
-                extraction: "36% Extrait • 120-Day Oak Cask",
-                ritual: "Mist twice onto the collar bone and inside the lapel of a bespoke wool overcoat thirty minutes before evening engagements.",
-                badge: "Mayfair Reserve",
+                notes: "Sacred Mysore Sandalwood | Himalayan White Tea, Silver Frankincense & Lotus Root",
+                description: "Stillness amidst empire—creamy aged Mysore sandalwood, steamed silver-needle white tea, and meditative temple frankincense.",
+                longDescription: "Conceived as an oasis of absolute composure for the gentleman of affairs, Buddha opens with cool Himalayan white tea and dew-kissed lotus before settling into forty-year aged Mysore sandalwood, Somalian silver frankincense, and dry cashmere musk. A study in quiet, unshakeable authority.",
+                origin: "Mayfair & Himalayan Foothills",
+                extraction: "34% Extrait • Sandalwood Heart Maceration",
+                ritual: "Mist once over the collar bone and wrists at dawn to anchor the mind in sovereign stillness.",
+                badge: "Zenith Reserve",
                 image: "",
                 images: []
             },
             {
                 id: 2,
-                name: "Savile Bespoke No. 08",
-                category: "Eau de Parfum Intense • 28%",
-                filterTag: "Aromatic",
-                price: 215.00,
+                name: "Sovereign",
+                category: "Pure Parfum • 38%",
+                filterTag: "Edible",
+                price: 290.00,
                 volume: "100ml",
-                notes: "Silver Tip Earl Grey | Crisp Florentine Iris, Vetiver & Cashmere Wool",
-                description: "Tailored as a sharp double-breasted chalk-stripe suit—cool Calabrian bergamot, dry rooty iris, and pressed flannel warmth.",
-                longDescription: "Inspired by the chalk, shears, and steamed worsted wool of Savile Row cutting rooms, Savile Bespoke No. 08 balances razor-sharp bergamot and silver-tip black tea against three-year aged Florentine Orris butter, Haitian vetiver, and white suede. Effortlessly composed for daytime and boardroom command.",
-                origin: "Savile Row, London",
-                extraction: "28% EDP Intense • Cold Orris Infusion",
-                ritual: "Apply to clean pulse points at the wrists and throat just prior to fastening French cuffs.",
-                badge: "Sartorial Icon",
+                notes: "Royal Assam Agarwood | 18-Year Speyside Malt, English Bridle Leather & Ambergris",
+                description: "Commanding, ceremonial, and unmistakably regal—vintage single malt and hand-stitched saddle leather wrapped around dark agarwood.",
+                longDescription: "Composed in homage to the wood-panelled state rooms of Whitehall and St. James’s, Sovereign unites wild-harvested Assam agarwood with 18-year Speyside single malt, supple English bridle leather, and maritime grey ambergris. Macerated for 120 days in charred oak casks.",
+                origin: "St. James’s, London",
+                extraction: "38% Pure Parfum • 120-Day Oak Cask",
+                ritual: "Apply to the collar bone and inside the lapel of a bespoke wool overcoat thirty minutes before formal evening engagements.",
+                badge: "Crown Allocation",
                 image: "",
                 images: []
             },
             {
                 id: 3,
-                name: "Sovereign Oud & Whitehall Tabac",
-                category: "Pure Parfum • 38%",
+                name: "Kama",
+                category: "Extrait de Parfum • 36%",
                 filterTag: "Edible",
-                price: 285.00,
+                price: 265.00,
                 volume: "100ml",
-                notes: "Royal Assam Agarwood | Havana Maduro Leaf, Clove Bud & Dark Benzoin",
-                description: "Opulent, ceremonial, and unapologetically regal—vintage cured tobacco leaf wrapped around resinous dark agarwood.",
-                longDescription: "Drawing from historic diplomatic dispatches and private humidors along Whitehall, Sovereign Oud pairs wild-harvested Assam agarwood with honeyed Maduro cigar leaf, roasted tonka bean, and Siam benzoin resin. A monumental nocturnal signature that lingers on silk and cashmere for days.",
-                origin: "Whitehall, London & Assam",
-                extraction: "38% Pure Parfum • Vintage Resin Ageing",
-                ritual: "One measured spray onto the sternum and a light mist across a silk evening scarf.",
-                badge: "Royal Allocation",
+                notes: "Crimson Damask Rose & Saffron | Dark Cacao, Red Amber, Vanilla Absolute & Oud",
+                description: "Intoxicating nocturnal magnetism—spiced Kashmiri saffron and dark roasted cacao entwined with velvet crimson rose and warm skin musk.",
+                longDescription: "An opulent after-hours elixir designed for candlelit intimacy, Kama weaves fiery Kashmiri saffron threads and crushed cardamom into a heart of nocturnal Damask rose absolute, bitter Peruvian cacao, and molten red amber. Hypnotic, warm, and impossibly magnetic.",
+                origin: "Knightsbridge, London & Kashmir",
+                extraction: "36% Extrait • Warm Resin Enfleurage",
+                ritual: "Anoint pulse points at the throat and wrists prior to late-evening rendezvous.",
+                badge: "Nocturnal Desire",
                 image: "",
                 images: []
             },
             {
                 id: 4,
-                name: "Cotswold Fougère & Rain",
-                category: "Eau de Parfum • 24%",
+                name: "Wanderer",
+                category: "Eau de Parfum Intense • 28%",
                 filterTag: "Aromatic",
-                price: 195.00,
+                price: 220.00,
                 volume: "100ml",
-                notes: "English Lavender & Crushed Mint | Wet Limestone, Oakmoss & Cypress",
-                description: "A misty morning ride across a Gloucestershire country estate—wild lavender, rain-soaked moss, and crushed green fern.",
-                longDescription: "Reimagining the aristocratic nineteenth-century British barberia fougère, Cotswold Fougère captures dewy English lavender from Hitchin fields, wild spearmint, and petrichor over a deep, earthy foundation of dark oakmoss, clary sage, and vetiver root.",
-                origin: "Gloucestershire, Cotswolds",
-                extraction: "24% EDP • Copper-Still Tincture",
-                ritual: "Mist generously across the jawline and chest after a traditional wet shave before stepping into the morning air.",
-                badge: "Heritage Classic",
+                notes: "Scottish Highland Peat & Sea Salt | Driftwood, Crushed Juniper, Vetiver & Rain",
+                description: "Untamed coastlines and windswept moors—bracing Atlantic sea spray, wild juniper berry, and smoky Highland birch tar.",
+                longDescription: "For the gentleman drawn to uncharted horizons, Wanderer captures the raw poetry of the Scottish Hebrides. Crisp Atlantic sea salt, crushed juniper, and rain-soaked limestone give way to charred driftwood, smoky Highland peat, and deep Haitian vetiver root.",
+                origin: "Scottish Hebrides & Mayfair",
+                extraction: "28% EDP Intense • Smoked Timber Ageing",
+                ritual: "Spray generously across throat and tweed or wax-cotton outerwear before stepping into the elements.",
+                badge: "Expedition Folio",
                 image: "",
                 images: []
             },
             {
                 id: 5,
-                name: "Knightsbridge Noir & Cognac",
-                category: "Extrait de Parfum • 34%",
-                filterTag: "Edible",
-                price: 260.00,
+                name: "Creator",
+                category: "Eau de Parfum Intense • 30%",
+                filterTag: "Aromatic",
+                price: 235.00,
                 volume: "100ml",
-                notes: "XO Grande Champagne Cognac | Black Truffle, Cathedral Incense & Myrrh",
-                description: "Velvet lapels under gaslight—fiery XO Cognac accord, dark Somalian frankincense, and roasted cacao nibs.",
-                longDescription: "Crafted for black-tie galas and private members' clubs in Knightsbridge, this intoxicating extrait weaves davana-laced XO Cognac and bitter dark cacao into Somalian frankincense, labdanum, and charred guaiac wood. Rich, magnetic, and deeply memorable.",
-                origin: "Knightsbridge, London",
-                extraction: "34% Extrait • Amphora Cured",
-                ritual: "Anoint both wrists and the nape of the neck before donning formal evening attire.",
-                badge: "Nocturnal Reserve",
+                notes: "Florentine Orris Butter & Black Ink | Virgin Cedar Shavings, Bergamot & Papyrus",
+                description: "The architect’s study at midnight—crisp Calabrian bergamot, dry cedarwood shavings, antique parchment, and metallic fountain ink.",
+                longDescription: "Dedicated to polymaths, visionaries, and master craftsmen, Creator blends electric Calabrian bergamot and black pepper with three-year aged Florentine iris butter, freshly planed Virginia cedarwood, smoked papyrus reed, and a distinct mineral ink accord.",
+                origin: "Savile Row, London",
+                extraction: "30% EDP Intense • Cold Orris Tincture",
+                ritual: "Mist onto French cuffs and collar bone before entering the studio or boardroom.",
+                badge: "Atelier Signature",
                 image: "",
                 images: []
             },
             {
                 id: 6,
-                name: "Windsor Vetiver & Smoked Birch",
-                category: "Eau de Parfum Intense • 26%",
-                filterTag: "Aromatic",
-                price: 210.00,
+                name: "Enchantress",
+                category: "Extrait de Parfum • 35%",
+                filterTag: "Edible",
+                price: 275.00,
                 volume: "100ml",
-                notes: "Bourbon Vetiver & Black Pepper | Charred Silver Birch, Cardamom & Amber",
-                description: "Crisp autumn timber and smoky turf—spicy green cardamom and Malabar black pepper over deep, smoky birch tar.",
-                longDescription: "Evoking ancient royal hunting forests at dusk, Windsor Vetiver opens with an invigorating crack of Malabar black pepper and crushed green cardamom pods, settling into a rugged, aristocratic base of smoked silver birch, roasted vetiver, and dry amberwood.",
-                origin: "Berkshire & Scottish Highlands",
-                extraction: "26% EDP Intense • Smoked Timber Ageing",
-                ritual: "Apply to pulse points and tweed or cashmere outerwear during crisp autumn and winter days.",
-                badge: "Estate Edition",
+                notes: "Black Orchid & Night-Blooming Jasmine | Forbidden Plum, Smoked Benzoin & Patchouli",
+                description: "Mysterious, spellbinding, and velvet-draped—dark liqueur-soaked plum and nocturnal jasmine over smoky Siam benzoin.",
+                longDescription: "A silhouette of pure fascination in a smoke-filled Mayfair salon, Enchantress opens with dark mirabelle plum and narcotic night-blooming jasmine before surrendering to black velvet orchid, aged Indonesian patchouli leaf, and resinous Siam benzoin.",
+                origin: "Mayfair, London & Grasse",
+                extraction: "35% Extrait • Subterranean Amphora Curing",
+                ritual: "One measured mist at the nape of the neck and across evening silk or velvet lapels.",
+                badge: "Velvet Alchemy",
                 image: "",
                 images: []
             }
@@ -1614,8 +1656,10 @@
         let activeModalProduct = null;
         let activeModalQty = 1;
         let activeModalPlate = 0;
+        let isActivelyScrolling = false;
+        let scrollIdleTimeout = null;
 
-        // DOM Elements
+        // DOM Elements (Cached once at startup to eliminate per-frame querySelector overhead)
         const productGrid = document.getElementById('product-grid');
         const cartBtn = document.getElementById('cart-btn');
         const closeCart = document.getElementById('close-cart');
@@ -1629,40 +1673,44 @@
         const toastTitle = document.getElementById('toast-title');
         const toastDesc = document.getElementById('toast-desc');
         const waxSealBadge = document.getElementById('wax-seal-badge');
+        const cachedRibbon = document.getElementById('scroll-ribbon');
+        const cachedHeroTriangle = document.getElementById('hero-bg-triangle');
+        const cachedParallaxShards = Array.from(document.querySelectorAll('.parallax-shard')).map(el => ({
+            el,
+            speed: parseFloat(el.dataset.speed || '0.2')
+        }));
 
-        // Initialize Lenis Smooth Scroll
+        // Initialize Lenis Smooth Scroll (Optimized for 60/120fps zero-lag scrolling)
         let lenis;
         if (typeof Lenis !== 'undefined') {
             lenis = new Lenis({
-                duration: 1.25,
-                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                lerp: 0.11,
                 smoothWheel: true,
-                wheelMultiplier: 0.95,
+                wheelMultiplier: 1.0,
                 touchMultiplier: 1.5
             });
 
-            lenis.on('scroll', ({ scroll, limit, velocity }) => {
-                // Update scroll progress ribbon
-                const progress = limit > 0 ? scroll / limit : 0;
-                const ribbon = document.getElementById('scroll-ribbon');
-                if (ribbon) {
-                    ribbon.style.transform = `scaleY(${progress})`;
+            lenis.on('scroll', ({ scroll, limit }) => {
+                isActivelyScrolling = true;
+                if (scrollIdleTimeout) clearTimeout(scrollIdleTimeout);
+                scrollIdleTimeout = setTimeout(() => {
+                    isActivelyScrolling = false;
+                }, 120);
+
+                // Update scroll progress ribbon (GPU transform only)
+                if (cachedRibbon && limit > 0) {
+                    cachedRibbon.style.transform = `scaleY(${(scroll / limit).toFixed(4)})`;
                 }
 
-                // Subtle velocity-driven paper bend
-                const clampedVel = Math.max(-4, Math.min(4, velocity * 0.45));
-                document.documentElement.style.setProperty('--scroll-vel', clampedVel.toFixed(2));
+                // Parallax background paper shards (cached references, no DOM queries or root style mutations)
+                for (let i = 0; i < cachedParallaxShards.length; i++) {
+                    const item = cachedParallaxShards[i];
+                    item.el.style.transform = `translate3d(0, ${(scroll * item.speed).toFixed(1)}px, 0)`;
+                }
 
-                // Parallax background paper shards
-                document.querySelectorAll('.parallax-shard').forEach(shard => {
-                    const speed = parseFloat(shard.dataset.speed || 0.2);
-                    shard.style.transform = `translate3d(0, ${scroll * speed}px, 0)`;
-                });
-
-                // Hero background geometric slow rotation
-                const heroTriangle = document.getElementById('hero-bg-triangle');
-                if (heroTriangle && scroll < 1200) {
-                    heroTriangle.style.transform = `translateY(${scroll * 0.18}px) rotate(${scroll * 0.03}deg)`;
+                // Hero background geometric slow rotation only when hero is visible
+                if (cachedHeroTriangle && scroll < 950) {
+                    cachedHeroTriangle.style.transform = `translate3d(0, ${(scroll * 0.16).toFixed(1)}px, 0) rotate(${(scroll * 0.025).toFixed(2)}deg)`;
                 }
             });
 
@@ -1723,7 +1771,7 @@
             });
         }
 
-        // Attach 3D Tactile Paper Tilt & Lighting Sheen to Cards (Zero-lag 60fps)
+        // Attach 3D Tactile Paper Tilt & Lighting Sheen to Cards (Zero-lag 60fps; skips calculation while actively scrolling)
         function bindPaperCardPhysics() {
             document.querySelectorAll('.paper-card').forEach(card => {
                 if (card.dataset.tiltBound === 'true') return;
@@ -1732,11 +1780,13 @@
                 let rafId = null;
 
                 card.addEventListener('mouseenter', () => {
+                    if (isActivelyScrolling) return;
                     card.style.transitionDelay = '0ms';
                     card.classList.add('is-hovering');
                 });
 
                 card.addEventListener('mousemove', (e) => {
+                    if (isActivelyScrolling) return;
                     if (rafId) cancelAnimationFrame(rafId);
                     rafId = requestAnimationFrame(() => {
                         const rect = card.getBoundingClientRect();
@@ -1746,12 +1796,12 @@
                         const centerY = rect.height / 2;
 
                         // Subtle paper flex angles
-                        const rotateX = ((y - centerY) / centerY) * -4.5;
-                        const rotateY = ((x - centerX) / centerX) * 4.5;
+                        const rotateX = ((y - centerY) / centerY) * -4.0;
+                        const rotateY = ((x - centerX) / centerX) * 4.0;
 
                         card.style.setProperty('--mouse-x', `${x}px`);
                         card.style.setProperty('--mouse-y', `${y}px`);
-                        card.style.transform = `perspective(1200px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-6px)`;
+                        card.style.transform = `perspective(1200px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-5px)`;
                     });
                 });
 
@@ -1921,6 +1971,39 @@
             bindPaperCardPhysics();
         }
 
+        // Resolve any of the 3 visual slide images for a perfume (0 = Flacon, 1 = Olfactory Accord, 2 = Cask & Wax Seal)
+        function resolveModalPlateImage(product, plateIdx) {
+            if (!product) return '';
+            if (plateIdx === 0) {
+                const custom = customCardImages[String(product.id)];
+                if (custom) return custom;
+                if (product.image) return product.image;
+            }
+            if (Array.isArray(product.images) && product.images[plateIdx]) {
+                return product.images[plateIdx];
+            }
+            return buildPerfumeFlaconStudioSvg(product, plateIdx);
+        }
+
+        // Render the 3-image horizontal sliding track inside the modal
+        function buildModalSliderTrack(product) {
+            const container = document.getElementById('modal-visual-content');
+            if (!container || !product) return;
+            const slides = [0, 1, 2].map(idx => {
+                const imgSrc = resolveModalPlateImage(product, idx);
+                return `
+                    <div class="w-full shrink-0 flex items-center justify-center p-2">
+                        <img src="${imgSrc}" alt="${escapeAttrClient(product.name)} — Image ${idx + 1}" draggable="false" class="w-full h-64 sm:h-72 object-cover select-none">
+                    </div>
+                `;
+            }).join('');
+            container.innerHTML = `
+                <div id="modal-slider-track" class="flex w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]" style="transform: translate3d(0%, 0, 0);">
+                    ${slides}
+                </div>
+            `;
+        }
+
         // Open Product Detail Pop-Up Modal
         function openProductModal(productId) {
             if (!isValidProductIdentifier(productId)) return;
@@ -1945,6 +2028,7 @@
             document.getElementById('modal-qty').textContent = '1';
             document.getElementById('modal-unit-note').textContent = `/ ${product.volume} flacon`;
             updateModalPriceDisplay();
+            buildModalSliderTrack(product);
             switchModalPlate(0);
 
             const modal = document.getElementById('product-modal');
@@ -1963,65 +2047,86 @@
             box.classList.add('scale-95', 'translate-y-4');
         }
 
-        // Close Modal on Escape Key
+        // Step Left (-1) or Right (+1) through the 3 Modal Images
+        function stepModalPlate(delta) {
+            if (!activeModalProduct) return;
+            const nextIdx = (activeModalPlate + delta + 3) % 3;
+            switchModalPlate(nextIdx);
+        }
+
+        // Close Modal on Escape Key or Slide Images with Left/Right Arrow Keys
         window.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('product-modal');
+            const isOpen = modal && !modal.classList.contains('pointer-events-none');
+            if (!isOpen) return;
             if (e.key === 'Escape') {
                 closeProductModal();
+            } else if (e.key === 'ArrowLeft') {
+                stepModalPlate(-1);
+            } else if (e.key === 'ArrowRight') {
+                stepModalPlate(1);
             }
         });
 
-        // Switch Visual Plate / Image Slot inside Modal
+        // Switch Visual Plate / Slide to Image inside Modal (Black dots inactive, Golden dot active)
         function switchModalPlate(plateIdx) {
-            activeModalPlate = plateIdx;
+            activeModalPlate = ((Number(plateIdx) || 0) + 3) % 3;
             const p = activeModalProduct;
             if (!p) return;
 
             document.querySelectorAll('.modal-plate-btn').forEach((btn, idx) => {
-                if (idx === plateIdx) {
-                    btn.className = 'modal-plate-btn py-2 px-2 border border-accentGold bg-paper/10 text-paper font-cinzel text-[10px] tracking-wider uppercase transition-all';
+                if (idx === activeModalPlate) {
+                    btn.className = 'modal-plate-btn w-2.5 h-2.5 rounded-full bg-accentGold border border-accentGold scale-125 shadow-[0_0_8px_rgba(197,160,89,0.75)] transition-all duration-300';
                 } else {
-                    btn.className = 'modal-plate-btn py-2 px-2 border border-paper/15 hover:border-paper/40 text-paper/60 font-cinzel text-[10px] tracking-wider uppercase transition-all';
+                    btn.className = 'modal-plate-btn w-2.5 h-2.5 rounded-full bg-black border border-paper/35 hover:border-accentGold transition-all duration-300';
                 }
             });
 
-            const container = document.getElementById('modal-visual-content');
-            // If a custom card image or explicit product image URL is available for this plate, render it directly
-            const customImg = plateIdx === 0 ? (customCardImages[String(p.id)] || p.image) : null;
-            const plateImgUrl = customImg || (p.images && p.images[plateIdx]);
-            if (plateImgUrl) {
-                container.innerHTML = `
-                    <img src="${plateImgUrl}" alt="${escapeAttrClient(p.name)}" class="max-h-60 w-auto object-contain shadow-2xl">
-                `;
-                return;
+            let track = document.getElementById('modal-slider-track');
+            if (!track) {
+                buildModalSliderTrack(p);
+                track = document.getElementById('modal-slider-track');
             }
-
-            // Elegant Architectural Flacon & Olfactory Study Plates
-            const topAccord = (p.notes || '').split('|')[0].trim();
-            if (plateIdx === 0) {
-                const studioFlacon = resolvePerfumeCardImage(p);
-                container.innerHTML = `
-                    <img src="${studioFlacon}" alt="${escapeAttrClient(p.name)}" class="w-full max-h-56 object-cover mb-3 shadow-2xl">
-                    <span class="font-cinzel text-xs tracking-[0.2em] text-paper uppercase">Plate I — Cut-Obsidian Flacon</span>
-                    <span class="font-serif italic text-[11px] text-paper/55 mt-1">Cherished Beyond Time &bull; ${p.volume} Crystal</span>
-                `;
-            } else if (plateIdx === 1) {
-                container.innerHTML = `
-                    <div class="w-28 h-28 rounded-full border border-accentGold/35 bg-charcoal/90 flex items-center justify-center mb-4 shadow-inner">
-                        <i class="fa-solid fa-crown text-3xl text-accentGold/85"></i>
-                    </div>
-                    <span class="font-cinzel text-xs tracking-[0.2em] text-paper uppercase">Plate II — ${topAccord}</span>
-                    <span class="font-serif italic text-[11px] text-paper/55 mt-1">Olfactory Heart &amp; Base Study &bull; ${p.origin}</span>
-                `;
-            } else {
-                container.innerHTML = `
-                    <div class="w-28 h-28 rounded-full border border-accentGold/35 bg-charcoal/90 flex items-center justify-center mb-4 shadow-inner">
-                        <i class="fa-solid fa-hourglass-half text-3xl text-accentGold/85"></i>
-                    </div>
-                    <span class="font-cinzel text-xs tracking-[0.2em] text-paper uppercase">Plate III — Sillage &amp; Cask Ageing</span>
-                    <span class="font-serif italic text-[11px] text-paper/55 mt-1">14+ Hour Tailored Trail &bull; ${p.extraction}</span>
-                `;
+            if (track) {
+                track.style.transform = `translate3d(-${activeModalPlate * 100}%, 0, 0)`;
             }
         }
+
+        // Enable Touch Swipe & Mouse Drag on Modal Image Stage
+        (function bindModalImageSwipe() {
+            const stage = document.getElementById('modal-image-stage');
+            if (!stage) return;
+            let startX = null;
+
+            stage.addEventListener('touchstart', (e) => {
+                if (e.touches && e.touches.length === 1) {
+                    startX = e.touches[0].clientX;
+                }
+            }, { passive: true });
+
+            stage.addEventListener('touchend', (e) => {
+                if (startX === null || !e.changedTouches || !e.changedTouches.length) return;
+                const dx = e.changedTouches[0].clientX - startX;
+                startX = null;
+                if (Math.abs(dx) > 36) {
+                    stepModalPlate(dx < 0 ? 1 : -1);
+                }
+            }, { passive: true });
+
+            stage.addEventListener('mousedown', (e) => {
+                if (e.target.closest('button')) return;
+                startX = e.clientX;
+            });
+
+            stage.addEventListener('mouseup', (e) => {
+                if (startX === null) return;
+                const dx = e.clientX - startX;
+                startX = null;
+                if (Math.abs(dx) > 36) {
+                    stepModalPlate(dx < 0 ? 1 : -1);
+                }
+            });
+        })();
 
         function adjustModalQty(delta) {
             activeModalQty = Math.max(1, activeModalQty + delta);
@@ -2732,12 +2837,16 @@
         closeCart.addEventListener('click', toggleCart);
         cartOverlay.addEventListener('click', toggleCart);
 
-        // Trigger single-shot 3D Gold Origami Unfold animation (on site start & on tap/click, never looping)
+        // Trigger single-shot 3D Gold Origami Unfold animation (on site start & on tap/click, then auto-release GPU animation layers after 2.85s)
         function triggerOrigamiUnfold(logoEl) {
             if (!logoEl) return;
+            if (logoEl._unfoldTimer) clearTimeout(logoEl._unfoldTimer);
             logoEl.classList.remove('is-unfolding');
             void logoEl.offsetWidth;
             logoEl.classList.add('is-unfolding');
+            logoEl._unfoldTimer = setTimeout(() => {
+                logoEl.classList.remove('is-unfolding');
+            }, 2850);
         }
 
         // Interactive 3D Origami V Logo Physics & Single-Shot Unfold
