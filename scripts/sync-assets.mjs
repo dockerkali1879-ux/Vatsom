@@ -35,5 +35,15 @@ if (fs.existsSync(storefrontSrc)) {
   fs.copyFileSync(storefrontSrc, path.join(publicDir, 'index.html'));
 }
 
+// Sync 3D Gold Origami Unfold assets directory (`./origami` -> `./public/origami`)
+const origamiSrcDir = path.join(rootDir, 'origami');
+const origamiDestDir = path.join(publicDir, 'origami');
+if (fs.existsSync(origamiSrcDir)) {
+  fs.mkdirSync(origamiDestDir, { recursive: true });
+  for (const asset of fs.readdirSync(origamiSrcDir)) {
+    fs.copyFileSync(path.join(origamiSrcDir, asset), path.join(origamiDestDir, asset));
+  }
+}
+
 console.log('[sync-assets] Synced static assets to ./public');
 

@@ -264,63 +264,234 @@
             transition: transform 0.1s linear;
         }
 
-        /* Interactive 3D Origami V Logo */
+        /* Interactive 3D Gold Origami V Unfold (Figma Node 3:2) */
+        @property --rotateX-transform {
+            syntax: '<angle>';
+            initial-value: 0rad;
+            inherits: false;
+        }
+        @property --translateZ-transform {
+            syntax: '<length>';
+            initial-value: 0px;
+            inherits: false;
+        }
+
         .origami-logo-wrap {
             position: relative;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             transform-style: preserve-3d;
-            perspective: 900px;
+            perspective: 1800px;
             cursor: pointer;
             user-select: none;
             transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
             filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.75));
+            overflow: visible;
         }
         .origami-logo-wrap.is-hovering {
             transition: transform 0.08s ease-out, filter 0.2s ease-out !important;
         }
-        .origami-logo-base {
-            display: block;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+        .origami-unfold-viewport {
+            position: relative;
+            width: 280px;
+            height: 176px;
+            flex: none;
+            transform-style: preserve-3d;
+            transform: scale(var(--origami-scale, 0.52));
+            transform-origin: center center;
             pointer-events: none;
         }
-        /* Top-Left Origami Fold Flap Layer (exact image slice that hinges in 3D on hover) */
-        .origami-flap-left {
+        .origami-shared-paper-space {
             position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            pointer-events: none;
-            clip-path: polygon(6.8% 2.4%, 30.3% 2.4%, 23.1% 32.8%, 12.1% 32.8%, 1.9% 20.8%);
-            transform-origin: 30.3% 2.4%;
-            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease;
-            will-change: transform, filter;
+            left: -517px;
+            top: -525.5px;
+            width: 1312px;
+            height: 1199px;
+            transform-style: preserve-3d;
         }
-        /* Right Origami Wing Flap Layer */
-        .origami-flap-right {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            pointer-events: none;
-            clip-path: polygon(89.9% 2.4%, 98.5% 32.2%, 81.0% 32.2%);
-            transform-origin: 89.9% 2.4%;
-            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease;
-            will-change: transform, filter;
+        .orig-3d {
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
         }
-        .origami-logo-wrap:hover .origami-flap-left {
-            transform: translateZ(10px) rotateY(-16deg) rotateX(10deg) scale(1.02);
-            filter: brightness(1.08) drop-shadow(3px 6px 6px rgba(0, 0, 0, 0.55));
+
+        /* Hinged Paper Resting State (Complete Unfolded V Logo) */
+        .orig-hinge-s1,
+        .orig-hinge-s2,
+        .orig-hinge-s3 {
+            --rotateX-transform: 0rad;
+            --translateZ-transform: 0px;
+            transform: translateZ(var(--translateZ-transform, 0px)) rotateX(var(--rotateX-transform, 0rad));
+            transform-origin: 0px 0px;
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
         }
-        .origami-logo-wrap:hover .origami-flap-right {
-            transform: translateZ(6px) rotateY(14deg) rotateX(6deg);
+        .orig-shadow-s1,
+        .orig-shadow-s2,
+        .orig-shadow-s3 {
+            fill: rgba(5, 2, 1, 0);
+        }
+        .orig-gold-s1,
+        .orig-gold-s2,
+        .orig-gold-s3 {
             filter: brightness(1.12);
         }
-        .origami-logo-wrap:active .origami-flap-left {
-            transform: translateZ(18px) rotateY(-26deg) rotateX(16deg) scale(1.04);
+
+        /* Single-Shot Unfold Animation (Triggers on site start & on tap/click, never loops) */
+        .origami-logo-wrap.is-unfolding .orig-hinge-s1 {
+            animation: kf_4_9_rotateX_0 2.8s linear 1 both, kf_4_9_translateZ_0 2.8s linear 1 both;
+            will-change: transform;
+        }
+        .origami-logo-wrap.is-unfolding .orig-hinge-s2 {
+            animation: kf_4_13_rotateX_0 2.8s linear 1 both, kf_4_13_translateZ_0 2.8s linear 1 both;
+            will-change: transform;
+        }
+        .origami-logo-wrap.is-unfolding .orig-hinge-s3 {
+            animation: kf_4_17_rotateX_0 2.8s linear 1 both, kf_4_17_translateZ_0 2.8s linear 1 both;
+            will-change: transform;
+        }
+        .origami-logo-wrap.is-unfolding .orig-shadow-s1 {
+            animation: kf_4_11_fill_0 2.8s linear 1 both;
+        }
+        .origami-logo-wrap.is-unfolding .orig-shadow-s2 {
+            animation: kf_4_15_fill_0 2.8s linear 1 both;
+        }
+        .origami-logo-wrap.is-unfolding .orig-shadow-s3 {
+            animation: kf_4_19_fill_0 2.8s linear 1 both;
+        }
+        .origami-logo-wrap.is-unfolding .orig-gold-s1 {
+            animation: kf_4_10_gold_0 2.8s linear 1 both;
+        }
+        .origami-logo-wrap.is-unfolding .orig-gold-s2 {
+            animation: kf_4_14_gold_0 2.8s linear 1 both;
+        }
+        .origami-logo-wrap.is-unfolding .orig-gold-s3 {
+            animation: kf_4_18_gold_0 2.8s linear 1 both;
+        }
+
+        /* Stage 1: Inner Arms (4:9 & 4:21) */
+        @keyframes kf_4_9_rotateX_0 {
+            0% { --rotateX-transform: -3.142rad; }
+            2.857% { animation-timing-function: cubic-bezier(0.65, 0, 0.95, 0.35); --rotateX-transform: -3.142rad; }
+            6.8% { animation-timing-function: cubic-bezier(0.2, 0.6, 0.55, 1); --rotateX-transform: -3.081rad; }
+            9.757% { animation-timing-function: cubic-bezier(0.3, 0.02, 0.1, 1); --rotateX-transform: -3.101rad; }
+            28.814% { animation-timing-function: cubic-bezier(0.12, 0.7, 0.2, 1); --rotateX-transform: -0.096rad; }
+            31.771% { animation-timing-function: ease-out; --rotateX-transform: 0.02rad; }
+            34.071% { animation-timing-function: ease-out; --rotateX-transform: -0.006rad; }
+            35.714% { --rotateX-transform: 0rad; }
+            100% { --rotateX-transform: 0rad; }
+        }
+        @keyframes kf_4_9_translateZ_0 {
+            0% { --translateZ-transform: -0.8px; }
+            2.857% { animation-timing-function: ease-out; --translateZ-transform: -0.8px; }
+            35.714% { --translateZ-transform: 0px; }
+            100% { --translateZ-transform: 0px; }
+        }
+        @keyframes kf_4_11_fill_0 {
+            0% { fill: rgba(5, 2, 1, 0.72); }
+            9.757% { animation-timing-function: ease-out; fill: rgba(5, 2, 1, 0.72); }
+            24.214% { animation-timing-function: ease-out; fill: rgba(5, 2, 1, 0.48); }
+            31.771% { animation-timing-function: ease-out; fill: rgba(5, 2, 1, 0.2); }
+            35.286% { animation-timing-function: step-end; fill: rgba(5, 2, 1, 0.08); }
+            35.714% { fill: rgba(5, 2, 1, 0); }
+            100% { fill: rgba(5, 2, 1, 0); }
+        }
+        @keyframes kf_4_10_gold_0 {
+            0% { filter: brightness(0.92); }
+            9.757% { animation-timing-function: cubic-bezier(0.5, 0, 0.7, 1); filter: brightness(0.92); }
+            18.957% { animation-timing-function: cubic-bezier(0.12, 0.65, 0.25, 1); filter: brightness(0.62); }
+            25.2% { animation-timing-function: ease-out; filter: brightness(1.34); }
+            31.771% { animation-timing-function: ease-out; filter: brightness(1.18); }
+            35.714% { filter: brightness(1.12); }
+            100% { filter: brightness(1.12); }
+        }
+
+        /* Stage 2: Outer Arms (4:13 & 4:25) */
+        @keyframes kf_4_13_rotateX_0 {
+            0% { --rotateX-transform: -3.142rad; }
+            24.286% { animation-timing-function: cubic-bezier(0.65, 0, 0.95, 0.35); --rotateX-transform: -3.142rad; }
+            28.443% { animation-timing-function: cubic-bezier(0.2, 0.6, 0.55, 1); --rotateX-transform: -3.081rad; }
+            31.561% { animation-timing-function: cubic-bezier(0.3, 0.02, 0.1, 1); --rotateX-transform: -3.101rad; }
+            51.654% { animation-timing-function: cubic-bezier(0.12, 0.7, 0.2, 1); --rotateX-transform: -0.096rad; }
+            54.771% { animation-timing-function: ease-out; --rotateX-transform: 0.02rad; }
+            57.196% { animation-timing-function: ease-out; --rotateX-transform: -0.006rad; }
+            58.929% { --rotateX-transform: 0rad; }
+            100% { --rotateX-transform: 0rad; }
+        }
+        @keyframes kf_4_13_translateZ_0 {
+            0% { --translateZ-transform: 0.15px; }
+            24.286% { animation-timing-function: ease-out; --translateZ-transform: 0.15px; }
+            58.929% { --translateZ-transform: 0px; }
+            100% { --translateZ-transform: 0px; }
+        }
+        @keyframes kf_4_15_fill_0 {
+            0% { fill: rgba(5, 2, 1, 0.72); }
+            31.561% { animation-timing-function: ease-out; fill: rgba(5, 2, 1, 0.72); }
+            46.804% { animation-timing-function: ease-out; fill: rgba(5, 2, 1, 0.48); }
+            54.771% { animation-timing-function: ease-out; fill: rgba(5, 2, 1, 0.2); }
+            58.5% { animation-timing-function: step-end; fill: rgba(5, 2, 1, 0.08); }
+            58.929% { fill: rgba(5, 2, 1, 0); }
+            100% { fill: rgba(5, 2, 1, 0); }
+        }
+        @keyframes kf_4_14_gold_0 {
+            0% { filter: brightness(0.92); }
+            31.561% { animation-timing-function: cubic-bezier(0.5, 0, 0.7, 1); filter: brightness(0.92); }
+            41.261% { animation-timing-function: cubic-bezier(0.12, 0.65, 0.25, 1); filter: brightness(0.62); }
+            47.843% { animation-timing-function: ease-out; filter: brightness(1.34); }
+            54.771% { animation-timing-function: ease-out; filter: brightness(1.18); }
+            58.929% { filter: brightness(1.12); }
+            100% { filter: brightness(1.12); }
+        }
+
+        /* Stage 3: Wingtips (4:17 & 4:29) */
+        @keyframes kf_4_17_rotateX_0 {
+            0% { --rotateX-transform: -3.142rad; }
+            51.786% { animation-timing-function: cubic-bezier(0.65, 0, 0.95, 0.35); --rotateX-transform: -3.142rad; }
+            55% { animation-timing-function: cubic-bezier(0.2, 0.6, 0.55, 1); --rotateX-transform: -3.081rad; }
+            57.411% { animation-timing-function: cubic-bezier(0.3, 0.02, 0.1, 1); --rotateX-transform: -3.101rad; }
+            72.946% { animation-timing-function: cubic-bezier(0.12, 0.7, 0.2, 1); --rotateX-transform: -0.096rad; }
+            75.357% { animation-timing-function: ease-out; --rotateX-transform: 0.02rad; }
+            77.232% { animation-timing-function: ease-out; --rotateX-transform: -0.006rad; }
+            78.571% { --rotateX-transform: 0rad; }
+            100% { --rotateX-transform: 0rad; }
+        }
+        @keyframes kf_4_17_translateZ_0 {
+            0% { --translateZ-transform: -0.15px; }
+            51.786% { animation-timing-function: ease-out; --translateZ-transform: -0.15px; }
+            78.571% { --translateZ-transform: 0px; }
+            100% { --translateZ-transform: 0px; }
+        }
+        @keyframes kf_4_19_fill_0 {
+            0% { fill: rgba(5, 2, 1, 0.72); }
+            57.411% { animation-timing-function: ease-out; fill: rgba(5, 2, 1, 0.72); }
+            69.196% { animation-timing-function: ease-out; fill: rgba(5, 2, 1, 0.48); }
+            75.357% { animation-timing-function: ease-out; fill: rgba(5, 2, 1, 0.2); }
+            78.143% { animation-timing-function: step-end; fill: rgba(5, 2, 1, 0.08); }
+            78.571% { fill: rgba(5, 2, 1, 0); }
+            100% { fill: rgba(5, 2, 1, 0); }
+        }
+        @keyframes kf_4_18_gold_0 {
+            0% { filter: brightness(0.92); }
+            57.411% { animation-timing-function: cubic-bezier(0.5, 0, 0.7, 1); filter: brightness(0.92); }
+            64.911% { animation-timing-function: cubic-bezier(0.12, 0.65, 0.25, 1); filter: brightness(0.62); }
+            70% { animation-timing-function: ease-out; filter: brightness(1.34); }
+            75.357% { animation-timing-function: ease-out; filter: brightness(1.18); }
+            78.571% { filter: brightness(1.12); }
+            100% { filter: brightness(1.12); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .origami-logo-wrap.is-unfolding .orig-hinge-s1,
+            .origami-logo-wrap.is-unfolding .orig-hinge-s2,
+            .origami-logo-wrap.is-unfolding .orig-hinge-s3,
+            .origami-logo-wrap.is-unfolding .orig-shadow-s1,
+            .origami-logo-wrap.is-unfolding .orig-shadow-s2,
+            .origami-logo-wrap.is-unfolding .orig-shadow-s3,
+            .origami-logo-wrap.is-unfolding .orig-gold-s1,
+            .origami-logo-wrap.is-unfolding .orig-gold-s2,
+            .origami-logo-wrap.is-unfolding .orig-gold-s3 {
+                animation: none !important;
+            }
         }
 
         /* Custom Scrollbar */
@@ -789,12 +960,204 @@
         </div>
 
         <div class="max-w-5xl mx-auto text-center relative z-10">
-            <!-- Interactive 3D Origami V Centerpiece -->
+            <!-- Interactive 3D Gold Origami V Centerpiece (Figma Node 3:2 — Unfolds on Start & on Tap) -->
             <div class="paper-unfold mb-6 flex justify-center">
-                <div class="origami-logo-wrap w-28 h-24 md:w-36 md:h-28" title="Hover or click to flex the origami parchment folds">
-                    <img src="vatsom_logo.png" alt="Vatsom Origami Emblem" class="origami-logo-base">
-                    <img src="vatsom_logo.png" alt="" aria-hidden="true" class="origami-flap-left">
-                    <img src="vatsom_logo.png" alt="" aria-hidden="true" class="origami-flap-right">
+                <div id="hero-origami-logo" class="origami-logo-wrap is-unfolding w-44 h-28 md:w-56 md:h-36" style="--origami-scale: 0.72;" data-node-id="3:2" data-name="Gold origami unfold" title="Tap to unfold the 3D Gold Origami V emblem">
+                    <div id="hero-origami-unfold-stage" class="origami-unfold-viewport">
+                        <div class="origami-shared-paper-space orig-3d" data-node-id="4:2" data-name="Shared paper space">
+                            <!-- Central four-facet badge (4:3) -->
+                            <div class="absolute left-0 top-0 w-[1312px] h-[1199px] orig-3d" data-node-id="4:3" data-name="Central four-facet badge">
+                                <div class="absolute left-[589px] top-[571px] w-[68px] h-[67px]" data-node-id="4:4" data-name="Badge · upper left">
+                                    <div class="absolute inset-[-1.48%_-1.2%_-1.33%_-1.62%]">
+                                        <img alt="" class="block max-w-none w-full h-full" width="69.917" height="68.889" src="origami/08b2d.png" />
+                                    </div>
+                                </div>
+                                <div class="absolute left-[625px] top-[599px] w-[32px] h-[98px]" data-node-id="4:5" data-name="Badge · lower left">
+                                    <div class="absolute inset-[-1.43%_-1.56%_-0.24%_-1.87%]">
+                                        <img alt="" class="block max-w-none w-full h-full" width="33.1" height="99.636" src="origami/b2898.png" />
+                                    </div>
+                                </div>
+                                <div class="absolute left-[657px] top-[599px] w-[33px] h-[98px]" data-node-id="4:6" data-name="Badge · lower right">
+                                    <div class="absolute inset-[-1.39%_-1.84%_-1.96%_-1.52%]">
+                                        <img alt="" class="block max-w-none w-full h-full" width="34.106" height="101.283" src="origami/37854.png" />
+                                    </div>
+                                </div>
+                                <div class="absolute left-[657px] top-[571px] w-[71px] h-[67px]" data-node-id="4:7" data-name="Badge · upper right">
+                                    <div class="absolute inset-[-1.47%_-1.6%_-1.3%_-1.17%]">
+                                        <img alt="" class="block max-w-none w-full h-full" width="72.965" height="68.854" src="origami/99c7a.png" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Left · inner arm branch (4:8) -->
+                            <div class="origami-flap-left absolute flex items-center justify-center left-[588.62px] top-[571px] w-[68.381px] h-[28.925px] orig-3d" data-node-id="4:8">
+                                <div class="flex-none orig-3d" style="transform: rotate(22.38deg);">
+                                    <div class="relative w-[73.539px] h-px orig-3d" data-name="Left · inner arm · crease axis">
+                                        <div class="orig-hinge-s1 absolute left-0 top-0 w-[73.539px] h-px" data-node-id="4:9" data-name="Left · inner arm · hinged paper">
+                                            <div class="absolute flex items-center justify-center left-[-38.07px] top-[-118.36px] w-[111.614px] h-[144.25px]" data-node-id="4:10">
+                                                <div class="flex-none" style="transform: rotate(-22.38deg);">
+                                                    <div class="relative w-[68px] h-[128px]" data-name="Left · inner arm · original gold">
+                                                        <div class="absolute inset-[-0.18%_-1.61%_-0.77%_-0.74%]">
+                                                            <img alt="" class="orig-gold-s1 block max-w-none w-full h-full" width="69.592" height="129.225" src="origami/67629.png" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="absolute flex items-center justify-center left-[-39px] top-[-92.47px] w-[39px] h-[92.849px] orig-3d" data-node-id="4:12">
+                                                <div class="flex-none orig-3d" style="transform: rotate(67.62deg);">
+                                                    <div class="relative w-[100px] h-px orig-3d" data-name="Left · outer arm · crease axis">
+                                                        <div class="orig-hinge-s2 absolute left-0 top-0 w-[100px] h-px" data-node-id="4:13" data-name="Left · outer arm · hinged paper">
+                                                            <div class="absolute flex items-center justify-center left-0 top-0 w-[100px] h-[35px]" data-node-id="4:14">
+                                                                <div class="flex-none" style="transform: rotate(-90deg);">
+                                                                    <div class="relative w-[35px] h-[100px]" data-name="Left · outer arm · original gold">
+                                                                        <div class="absolute inset-[-1.33%_-1.43%_-1.85%_-1.75%]">
+                                                                            <img alt="" class="orig-gold-s2 block max-w-none w-full h-full" width="36.113" height="103.18" src="origami/44bf5.png" />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="absolute flex items-center justify-center left-0 top-[-0.75px] w-[40.659px] h-[35.753px] orig-3d" data-node-id="4:16">
+                                                                <div class="flex-none orig-3d" style="transform: rotate(-138.81deg);">
+                                                                    <div class="relative w-[53.151px] h-px orig-3d" data-name="Left · wingtip · crease axis">
+                                                                        <div class="orig-hinge-s3 absolute left-0 top-0 w-[53.151px] h-px" data-node-id="4:17" data-name="Left · wingtip · hinged paper">
+                                                                            <div class="absolute flex items-center justify-center left-[-39.51px] top-[-89.93px] w-[113.733px] h-[116.273px]" data-node-id="4:18">
+                                                                                <div class="flex-none" style="transform: rotate(48.81deg);">
+                                                                                    <div class="relative w-[95px] h-[68px]" data-name="Left · wingtip · original gold">
+                                                                                        <div class="absolute inset-[-1.43%_-0.94%_-1.11%_-1.6%]">
+                                                                                            <img alt="" class="orig-gold-s3 block max-w-none w-full h-full" width="97.414" height="69.728" src="origami/d6032.png" />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="absolute flex items-center justify-center left-0 top-0 w-[44.5px] h-[35px]" data-node-id="4:19">
+                                                                <div class="flex-none" style="transform: matrix(0, -1, 1, 0, 0, 0);">
+                                                                    <div class="relative w-[35px] h-[44.5px]" data-name="Left · wingtip · contact shadow">
+                                                                        <div class="absolute inset-[-2.99%_-1.43%_-1.92%_-1.75%]">
+                                                                            <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="36.1131" height="46.6832" viewBox="0 0 36.1131 46.6832" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                                <path class="orig-shadow-s3" d="M0.613065 41.3307L35.6131 1.33072V8.83072L3.23806 45.8307L0.613065 41.3307Z" />
+                                                                            </svg>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="absolute flex items-center justify-center left-[-38.07px] top-[-94.41px] w-[43.59px] h-[96.351px]" data-node-id="4:15">
+                                                <div class="flex-none" style="transform: matrix(0.9246780872344971, -0.38074979186058044, 0.38074979186058044, 0.9246780872344971, 0, 0);">
+                                                    <div class="relative w-[5.1px] h-[102.1px]" data-name="Left · outer arm · contact shadow">
+                                                        <div class="absolute inset-[-0.23%_-9.8%_-0.73%_-9.8%]">
+                                                            <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="6.1" height="103.081" viewBox="0 0 6.1 103.081" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path class="orig-shadow-s2" d="M0.5 0.234578V100.235L5.6 102.335V9.83458L0.5 0.234578Z" />
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Left · inner arm · contact shadow (4:11) -->
+                            <div class="absolute left-[589px] top-[571px] w-[68px] h-[30.925px]" data-node-id="4:11" data-name="Left · inner arm · contact shadow">
+                                <div class="absolute inset-[-3.22%_-1.2%_-1.95%_-1.62%]">
+                                    <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="69.917" height="32.5227" viewBox="0 0 69.917 32.5227" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path class="orig-shadow-s1" d="M1.10195 0.994473L69.1019 28.9945L66.7019 31.9195L3.80195 6.01947L1.10195 0.994473Z" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Right · inner arm branch (4:20) -->
+                            <div class="origami-flap-right absolute flex items-center justify-center left-[657px] top-[571px] w-[71.367px] h-[28.93px] orig-3d" data-node-id="4:20">
+                                <div class="flex-none orig-3d" style="transform: rotate(-21.52deg);">
+                                    <div class="relative w-[76.322px] h-px orig-3d" data-name="Right · inner arm · crease axis">
+                                        <div class="orig-hinge-s1 absolute left-0 top-0 w-[76.322px] h-px" data-node-id="4:21" data-name="Right · inner arm · hinged paper">
+                                            <div class="absolute flex items-center justify-center left-0 top-[-119.07px] w-[113.939px] h-[145.489px]" data-node-id="4:22">
+                                                <div class="flex-none" style="transform: rotate(21.52deg);">
+                                                    <div class="relative w-[72px] h-[128px]" data-name="Right · inner arm · original gold">
+                                                        <div class="absolute inset-[-0.19%_-0.69%_-0.77%_-1.56%]">
+                                                            <img alt="" class="orig-gold-s1 block max-w-none w-full h-full" width="73.626" height="129.227" src="origami/dc017.png" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="absolute flex items-center justify-center left-[76.32px] top-[-92.66px] w-[38.544px] h-[93.037px] orig-3d" data-node-id="4:24">
+                                                <div class="flex-none orig-3d" style="transform: rotate(-67.9deg);">
+                                                    <div class="relative w-[100.005px] h-px orig-3d" data-name="Right · outer arm · crease axis">
+                                                        <div class="orig-hinge-s2 absolute left-0 top-0 w-[100.005px] h-px" data-node-id="4:25" data-name="Right · outer arm · hinged paper">
+                                                            <div class="absolute flex items-center justify-center left-0 top-[-1px] w-[100.345px] h-[35.998px]" data-node-id="4:26">
+                                                                <div class="flex-none" style="transform: rotate(89.43deg);">
+                                                                    <div class="relative w-[35px] h-[100px]" data-name="Right · outer arm · original gold">
+                                                                        <div class="absolute inset-[-1.34%_-1.74%_-1.88%_-1.48%]">
+                                                                            <img alt="" class="orig-gold-s2 block max-w-none w-full h-full" width="36.129" height="103.226" src="origami/f5cb1.png" />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="absolute flex items-center justify-center left-[59.69px] top-[-0.76px] w-[40.313px] h-[35.154px] orig-3d" data-node-id="4:28">
+                                                                <div class="flex-none orig-3d" style="transform: rotate(139.06deg);">
+                                                                    <div class="relative w-[52.498px] h-px orig-3d" data-name="Right · wingtip · crease axis">
+                                                                        <div class="orig-hinge-s3 absolute left-0 top-0 w-[52.498px] h-px" data-node-id="4:29" data-name="Right · wingtip · hinged paper">
+                                                                            <div class="absolute flex items-center justify-center left-[-21.33px] top-[-86.71px] w-[110.1px] h-[112.615px]" data-node-id="4:30">
+                                                                                <div class="flex-none" style="transform: rotate(-49.64deg);">
+                                                                                    <div class="relative w-[90px] h-[68px]" data-name="Right · wingtip · original gold">
+                                                                                        <div class="absolute inset-[-1.43%_-1.61%_-1.15%_-0.97%]">
+                                                                                            <img alt="" class="orig-gold-s3 block max-w-none w-full h-full" width="92.322" height="69.754" src="origami/3c89b.png" />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="absolute flex items-center justify-center left-[55.51px] top-[-0.07px] w-[44.839px] h-[34.518px]" data-node-id="4:31">
+                                                                <div class="flex-none" style="transform: matrix(0.009999499656260014, 0.9999499917030334, -0.9999499917030334, 0.009999499656260014, 0, 0);">
+                                                                    <div class="relative w-[34.075px] h-[44.5px]" data-name="Right · wingtip · contact shadow">
+                                                                        <div class="absolute inset-[-3.02%_-1.79%_-1.94%_-1.47%]">
+                                                                            <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="35.1872" height="46.7062" viewBox="0 0 35.1872 46.7062" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                                <path class="orig-shadow-s3" d="M0.576841 1.34447L34.5768 41.3445L31.9518 45.8445L0.501841 8.84447L0.576841 1.34447Z" />
+                                                                            </svg>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="absolute flex items-center justify-center left-[70.6px] top-[-94.98px] w-[43.341px] h-[97.301px]" data-node-id="4:27">
+                                                <div class="flex-none" style="transform: matrix(0.9302729368209839, 0.36686819791793823, -0.36686819791793823, 0.9302729368209839, 0, 0);">
+                                                    <div class="relative w-[6.325px] h-[102.1px]" data-name="Right · outer arm · contact shadow">
+                                                        <div class="absolute inset-[-0.24%_-7.9%_-0.72%_-8.02%]">
+                                                            <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="7.33238" height="103.083" viewBox="0 0 7.33238 103.083" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path class="orig-shadow-s2" d="M5.8324 100.245L6.8324 0.245131L1.4324 9.84513L0.507401 102.345L5.8324 100.245Z" />
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right · inner arm · contact shadow (4:23) -->
+                            <div class="absolute left-[657px] top-[571px] w-[71px] h-[30.925px]" data-node-id="4:23" data-name="Right · inner arm · contact shadow">
+                                <div class="absolute inset-[-3.18%_-1.6%_-1.93%_-1.17%]">
+                                    <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="72.9652" height="32.506" viewBox="0 0 72.9652 32.506" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path class="orig-shadow-s1" d="M0.832098 28.9843L71.8321 0.984332L68.9821 6.00933L3.3071 31.9093L0.832098 28.9843Z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -2232,13 +2595,43 @@
         closeCart.addEventListener('click', toggleCart);
         cartOverlay.addEventListener('click', toggleCart);
 
-        // Interactive 3D Origami V Logo Physics
+        // Trigger single-shot 3D Gold Origami Unfold animation (on site start & on tap/click, never looping)
+        function triggerOrigamiUnfold(logoEl) {
+            if (!logoEl) return;
+            logoEl.classList.remove('is-unfolding');
+            void logoEl.offsetWidth;
+            logoEl.classList.add('is-unfolding');
+        }
+
+        // Interactive 3D Origami V Logo Physics & Single-Shot Unfold
         function bindOrigamiLogoPhysics() {
+            const masterStage = document.getElementById('hero-origami-unfold-stage');
+
             document.querySelectorAll('.origami-logo-wrap').forEach(logo => {
+                // Hydrate compact header/footer origami logos with the 3D unfold hierarchy
+                if (masterStage && !logo.querySelector('.origami-unfold-viewport')) {
+                    const rect = logo.getBoundingClientRect();
+                    const targetWidth = rect.width || 40;
+                    const scale = Math.max(0.12, Math.min(1, targetWidth / 280));
+                    logo.style.setProperty('--origami-scale', scale.toFixed(3));
+                    const clone = masterStage.cloneNode(true);
+                    clone.removeAttribute('id');
+                    logo.innerHTML = '';
+                    logo.appendChild(clone);
+                }
+
+                // Trigger unfold once when the site starts
+                triggerOrigamiUnfold(logo);
+
                 if (logo.dataset.logoBound === 'true') return;
                 logo.dataset.logoBound = 'true';
 
                 let rafId = null;
+
+                // Replay single-shot unfold from folded -> complete V logo when tapped/clicked
+                logo.addEventListener('click', (e) => {
+                    triggerOrigamiUnfold(logo);
+                });
 
                 logo.addEventListener('mouseenter', () => {
                     logo.classList.add('is-hovering');
@@ -2251,10 +2644,10 @@
                         const x = (e.clientX - rect.left) / rect.width - 0.5;
                         const y = (e.clientY - rect.top) / rect.height - 0.5;
 
-                        const rotateX = y * -22;
-                        const rotateY = x * 22;
+                        const rotateX = y * -18;
+                        const rotateY = x * 18;
 
-                        logo.style.transform = `perspective(900px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale(1.06)`;
+                        logo.style.transform = `perspective(1800px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale(1.04)`;
                     });
                 });
 

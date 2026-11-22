@@ -89,6 +89,7 @@ describe('VATSOM Frontend Preservation & Regression Suite', () => {
       'Pratham_Vatsa_Resume.pdf',
       'admin-portal.html',
       'index.html',
+      'origami',
       'paper_crumple_effect.js',
       'portfolio.html',
       'pratham_hero.jpg',
