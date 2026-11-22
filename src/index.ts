@@ -167,7 +167,11 @@ export default {
           const trimmedAssetPath = url.pathname.replace(/\/+$/, '') || '/';
           const lowerAssetPath = trimmedAssetPath.toLowerCase();
 
-          if (isDedicatedAdminHost) {
+          if (lowerAssetPath === '/favicon.ico') {
+            const favUrl = new URL(request.url);
+            favUrl.pathname = '/vatsom_logo.png';
+            assetRequest = new Request(favUrl.toString(), request);
+          } else if (isDedicatedAdminHost) {
             if (url.pathname === '/vatsom_premium_oils.html') {
               return jsonError(new NotFoundError('Route not found.'), env, requestId, requestOrigin);
             }
